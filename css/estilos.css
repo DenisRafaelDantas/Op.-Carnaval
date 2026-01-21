@@ -46,7 +46,7 @@ body {
 
 /* Brasão inferior (4º BPM/M) */
 .brasao-4bpmm {
-    max-width: 180px;
+    max-width: 150px;
     /* tamanho “ideal” no desktop */
     margin-bottom: 8px;
     /* espaço antes do card */
