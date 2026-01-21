@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Admin • PMs - Operação Carnaval</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+
+  <link rel="stylesheet" href="../css/estilos.css" />
+</head>
+
+<body>
+  <main class="container py-4">
+    <div class="mx-auto conteudo-largura">
+
+      <header class="cabecalho-interno">
+        <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP">
+        <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M">
+      </header>
+
+      <section class="card shadow-sm">
+        <div class="card-body p-4">
+
+          <h1 class="h5 mb-1">PMs</h1>
+          <p class="text-body-secondary mb-3">
+            Lista de PMs cadastrados. Você pode cadastrar e editar.
+          </p>
+
+          <div class="d-flex gap-2 mb-3">
+            <a class="btn btn-primary" href="cadastro-pm.html">
+              Cadastrar PM
+            </a>
+
+            <a class="btn btn-outline-light" href="index.html">
+              Voltar
+            </a>
+          </div>
+
+          <div id="listaPms"></div>
+
+          <div id="semPms" class="text-body-secondary small d-none mt-3">
+            Nenhum PM cadastrado ainda.
+          </div>
+
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+
+  <script src="js/pms.js"></script>
+  <script src="js/uppercase.js"></script>
+</body>
+</html>

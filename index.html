@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <!-- Define codificação padrão (acentos etc.) -->
+    <meta charset="utf-8" />
+
+    <!-- Ajuste para responsividade em celular -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Título que aparece na aba do navegador -->
+    <title>Operação Carnaval - Consulta por RE</title>
+
+    <!-- Bootstrap CSS (via CDN) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+
+    <!-- CSS do projeto -->
+    <link rel="stylesheet" href="css/estilos.css" />
+</head>
+
+<body>
+    <!-- Container principal (centraliza e dá respiro) -->
+    <main class="container py-4">
+        <!-- Coluna central com largura controlada (fica bonito no desktop e no mobile) -->
+        <div class="mx-auto conteudo-largura">
+
+            <!-- Área dos brasões (alinhados ao topo e centralizados horizontalmente) -->
+            <header class="text-center mb-4">
+                <!-- Brasão PMESP (em cima) -->
+                <img src="img/pmesp.png" class="brasao brasao-pmesp"
+                    alt="Brasão da Polícia Militar do Estado de São Paulo" />
+
+                <!-- Brasão 4º BPM/M (abaixo) -->
+                <img src="img/4bpmm.png" class="brasao brasao-4bpmm" alt="Brasão do 4º BPM/M" />
+            </header>
+
+            <!-- Cartão para destacar o formulário -->
+            <section class="card shadow-sm">
+                <!-- Corpo do cartão -->
+                <div class="card-body p-4">
+
+                    <!-- Título do bloco -->
+                    <h1 class="h5 mb-2">Operação Carnaval</h1>
+
+                    <!-- Mensagem orientando o policial -->
+                    <p class="text-body-secondary mb-4">
+                        Digite seu <strong>RE sem o dígito</strong> para consultar seus dados de escala.
+                    </p>
+
+                    <!-- Formulário (por enquanto só visual/validação local) -->
+                    <form id="form-re" novalidate>
+                        <!-- Grupo do campo -->
+                        <div class="mb-3">
+                            <!-- Rótulo do campo -->
+                            <label for="re" class="form-label">RE (6 dígitos)</label>
+
+                            <!-- Campo RE -->
+                            <input type="text" class="form-control form-control-lg" id="re" name="re"
+                                placeholder="Ex.: 123456" inputmode="numeric" autocomplete="off" maxlength="6" required
+                                aria-describedby="ajuda-re" />
+
+                            <!-- Feedback de validação (Bootstrap) -->
+                            <div class="invalid-feedback">
+                                Informe um RE válido com 6 dígitos (somente números).
+                            </div>
+                        </div>
+
+                        <!-- Botão entrar -->
+                        <button type="submit" id="btn-entrar" class="btn btn-primary btn-lg w-100" disabled>
+                            Entrar
+                        </button>
+                    </form>
+
+                    <!-- Rodapé discreto (opcional, ajuda na organização visual) -->
+                    <p class="text-center text-body-secondary small mt-3 mb-0">
+                        PMESP • Sistema Operação Carnaval
+                    </p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS (bundle com Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+
+    <!-- JS do projeto (separado, boas práticas) -->
+    <script src="js/app.js"></script>
+</body>
+
+</html>

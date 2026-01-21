@@ -1,0 +1,107 @@
+/* =========================
+   Estilos globais da página
+   ========================= */
+
+body {
+    background: #474747;
+    /* cinza claro suave */
+}
+
+/* Controla a largura máxima do conteúdo central para não “esticar” demais no desktop */
+.conteudo-largura {
+    max-width: 460px;
+    /* largura enxuta e elegante */
+}
+
+/* =========================
+   Estilos dos brasões
+   ========================= */
+
+/* Classe base para padronizar comportamento das imagens */
+.brasao {
+    display: block;
+    /* garante quebra de linha e centralização */
+    margin-left: auto;
+    /* centraliza horizontalmente */
+    margin-right: auto;
+    /* centraliza horizontalmente */
+    height: auto;
+    /* mantém proporção */
+    width: 100%;
+    /* permite adaptar ao tamanho da tela */
+    object-fit: contain;
+    /* evita distorção */
+}
+
+/* Brasão superior (PMESP) */
+.brasao-pmesp {
+    max-width: 220px;
+    /* tamanho “ideal” no desktop */
+    margin-top: 8px;
+    /* respiro no topo */
+    margin-bottom: 10px;
+    /* espaço entre os brasões */
+}
+
+/* Brasão inferior (4º BPM/M) */
+.brasao-4bpmm {
+    max-width: 190px;
+    /* tamanho “ideal” no desktop */
+    margin-bottom: 8px;
+    /* espaço antes do card */
+}
+
+/* =========================
+   Brasões – telas internas
+   ========================= */
+
+/* Container dos brasões em telas internas */
+.cabecalho-interno {
+    display: flex;
+    /* coloca lado a lado */
+    justify-content: space-between;
+    /* centraliza horizontalmente */
+    align-items: center;
+    /* alinha verticalmente */
+    gap: 16px;
+    /* espaço entre os brasões */
+    margin-bottom: 16px;
+    /* espaço antes do conteúdo */
+}
+
+/* Estilo base dos brasões internos */
+.cabecalho-interno .brasao {
+    width: auto;
+    max-height: 70px;
+    /* tamanho reduzido e elegante */
+    margin: 0;
+    /* remove margens antigas */
+}
+
+/* Ajuste fino individual (opcional) */
+.cabecalho-interno .brasao-pmesp {
+    max-height: 60px;
+}
+
+.cabecalho-interno .brasao-4bpmm {
+    max-height: 80px;
+}
+
+/* =========================
+   Prévia do mapa (My Maps)
+   - corta a barra superior
+   ========================= */
+.mapa-preview-wrapper {
+  overflow: hidden;          /* corta o topo que sair */
+  border-radius: 0.5rem;
+}
+
+/* “Sobe” o iframe para esconder a faixa */
+.mapa-preview {
+  width: 300px;
+  height: 350px;             /* ajuste se quiser */
+  border: 0;
+  position: relative;
+  top: -70px;                /* ajuste fino: 40~70px costuma resolver */
+}
+

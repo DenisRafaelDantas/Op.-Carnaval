@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-br">
+
+<head>
+    <!-- Codificação -->
+    <meta charset="utf-8" />
+
+    <!-- Responsividade no celular -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Título da aba -->
+    <title>Cadastro de Patrulha - Operação Carnaval</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+
+    <!-- CSS do projeto -->
+    <link rel="stylesheet" href="..\css\estilos.css" />
+</head>
+
+<body>
+    <!-- Conteúdo principal com respiro -->
+    <main class="container py-4">
+        <!-- Coluna central -->
+        <div class="mx-auto conteudo-largura">
+
+            <!-- Cabeçalho com brasões -->
+            <header class="cabecalho-interno">
+                <!-- Brasão PMESP (canto esquerdo) -->
+                <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="Brasão da PMESP" />
+
+                <!-- Brasão 4º BPM/M (canto direito) -->
+                <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="Brasão do 4º BPM/M" />
+            </header>
+
+            <!-- Card do formulário -->
+            <section class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <!-- Título da tela -->
+                    <h1 class="h5 mb-1">Cadastro de Patrulha</h1>
+
+                    <!-- Subtexto -->
+                    <p class="text-body-secondary mb-4">
+                        Preencha as informações da patrulha para a Operação Carnaval.
+                    </p>
+
+                    <!-- Formulário principal -->
+                    <form id="form-patrulha" novalidate>
+                        <!-- Número da patrulha (automático) -->
+                        <div class="mb-3">
+                            <label for="numeroPatrulha" class="form-label">Número da Patrulha</label>
+
+                            <!-- Campo desabilitado para não editar manualmente -->
+                            <input type="text" class="form-control form-control-lg" id="numeroPatrulha"
+                                name="numeroPatrulha" disabled aria-describedby="ajuda-numero" />
+
+                            <!-- Ajuda do campo -->
+                            <div id="ajuda-numero" class="form-text">
+                                Gerado automaticamente (01, 02, 03...).
+                            </div>
+                        </div>
+
+                        <!-- CPP (endereço/área de patrulhamento) -->
+                        <div class="mb-3">
+                            <label for="cpp" class="form-label">CPP (Endereço/Área de Patrulhamento)</label>
+
+                            <input type="text" class="form-control" id="cpp" name="cpp"
+                                placeholder="Ex.: Av. Paulista, 1000 - Bela Vista, São Paulo/SP" required
+                                maxlength="120" />
+
+                            <div class="invalid-feedback">
+                                Informe o CPP (endereço/área) para patrulhamento.
+                            </div>
+                        </div>
+
+                        <!-- Campo para Google Maps -->
+                        <div class="mb-3">
+                            <label for="mapa" class="form-label">Mapa (Google Maps)</label>
+
+
+                            <!-- Campo onde pode colar link ou embed -->
+                            <input type="url" class="form-control" data-no-uppercase 
+                            id="mapa" 
+                            name="googleMaps"
+                                placeholder="Cole aqui um link do Google Maps ou um código de incorporação (iframe)."
+                                aria-describedby="ajuda-mapa" />
+
+                            <div id="ajuda-mapa" class="form-text">
+                                Dica: pode colar um link do Maps ou o trecho do <code>iframe</code> (embed).
+                            </div>
+                        </div>
+
+                        <!-- Prévia do mapa -->
+                        <div class="mb-4">
+                            <!-- Texto pequeno para orientar -->
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="text-body-secondary small">Prévia do mapa</span>
+
+                                <!-- Botão pequeno para limpar o mapa -->
+                                <button type="button" id="btnLimparMapa" class="btn btn-outline-secondary btn-sm">
+                                    Limpar mapa
+                                </button>
+                            </div>
+
+                            <!-- iframe de preview (vai ser preenchido via JS) -->
+                             <div class="mapa-preview-wrapper">
+                            <iframe id="mapaPreview" class="mapa-preview" src="" loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade" title="Prévia do Google Maps"></iframe>
+                            </div>
+                            <!-- Mensagem discreta quando não tiver mapa -->
+                            <div id="mapaVazio" class="text-body-secondary small mt-2">
+                                Cole um link ou embed para visualizar aqui.
+                            </div>
+                        </div>
+
+                        <!-- Missão da patrulha -->
+                        <div class="mb-4">
+                            <label for="missao" class="form-label">Missão da Patrulha</label>
+
+                            <textarea class="form-control" id="missao" name="missao" rows="4"
+                                placeholder="Descreva a missão, orientações e observações relevantes..." required
+                                maxlength="500"></textarea>
+
+                            <div class="form-text">
+                                Até 500 caracteres.
+                            </div>
+
+                            <div class="invalid-feedback">
+                                Informe a missão da patrulha.
+                            </div>
+                        </div>
+
+                        <!-- Botões de ação -->
+                        <div class="d-flex gap-2">
+                            <!-- Botão salvar -->
+                            <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
+                                Salvar
+                            </button>
+
+                            <!-- Botão cancelar -->
+                            <button type="button" id="btnCancelar" class="btn btn-outline-light btn-lg">
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Rodapé pequeno -->
+                    <p class="text-center text-body-secondary small mt-3 mb-0">
+                        PMESP • Cadastro de Patrulhas
+                    </p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+
+    <!-- JS específico desta tela -->
+    <script src="js/patrulha.js"></script>
+    <script src="js/uppercase.js"></script>
+</body>
+
+</html>
