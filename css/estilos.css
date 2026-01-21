@@ -27,7 +27,7 @@ body {
     /* centraliza horizontalmente */
     height: auto;
     /* mantém proporção */
-    width: 100%;
+    width: 90%;
     /* permite adaptar ao tamanho da tela */
     object-fit: contain;
     /* evita distorção */
