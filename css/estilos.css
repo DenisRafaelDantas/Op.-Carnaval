@@ -19,7 +19,7 @@ body {
 
 /* Classe base para padronizar comportamento das imagens */
 .brasao {
-    display: block;
+    display: flex;
     /* garante quebra de linha e centralização */
     margin-left: auto;
     /* centraliza horizontalmente */
@@ -27,7 +27,7 @@ body {
     /* centraliza horizontalmente */
     height: auto;
     /* mantém proporção */
-    width: 90%;
+    width: 100%;
     /* permite adaptar ao tamanho da tela */
     object-fit: contain;
     /* evita distorção */
@@ -45,7 +45,7 @@ body {
 
 /* Brasão inferior (4º BPM/M) */
 .brasao-4bpmm {
-    max-width: 190px;
+    max-width: 180px;
     /* tamanho “ideal” no desktop */
     margin-bottom: 8px;
     /* espaço antes do card */
@@ -105,3 +105,33 @@ body {
   top: -70px;                /* ajuste fino: 40~70px costuma resolver */
 }
 
+/* =========================
+   INDEX • Cabeçalho com brasões grandes
+   ========================= */
+
+/* Container do cabeçalho do index */
+.cabecalho-index {
+  display: flex;
+  justify-content: space-between; /* um em cada lado */
+  align-items: flex-start;
+  padding: 1rem 0rem 1rem;
+  width: 100%;
+}
+
+/* Brasões do index (maiores que os internos) */
+.brasao-index {
+  height: 200px;
+  max-width: 40%;
+  object-fit: contain;
+
+  /* pequeno respiro só vertical */
+  margin-top: 0.5rem;
+}
+
+
+/* Responsivo para celular */
+@media (max-width: 576px) {
+  .brasao-index {
+    height: 90px;
+  }
+}
