@@ -67,7 +67,7 @@ function renderizar() {
 
     /* Card externo */
     const card = document.createElement("div");
-    card.className = "card mb-3";
+    card.className = "card border-danger bg-secondary-subtle border-3 mb-3";
 
     /* Conteúdo do card */
     card.innerHTML = `

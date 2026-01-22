@@ -20,7 +20,7 @@ body {
 /* Classe base para padronizar comportamento das imagens */
 .brasao {
     display: inline;
-    justify-content: space-between
+    justify-content: space-between;
     /* garante quebra de linha e centralização */
     margin-left: auto;
     /* centraliza horizontalmente */
