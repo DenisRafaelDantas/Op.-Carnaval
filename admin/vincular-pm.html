@@ -75,19 +75,17 @@
 
             <!-- COMPOSIÇÃO (no mobile fica em cima; no desktop fica à direita) -->
             <div class="col-12 col-lg-5 order-1 order-lg-2">
-              <div class="border rounded p-3 bg-dark-subtle">
+              <div class="border rounded p-3 bg-dark-subtle overflow-hidden">
 
                 <!-- Cabeçalho da composição -->
-                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                  <strong>Composição da Patrulha</strong>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                  <strong class="me-auto">Composição da Patrulha</strong>
 
-                  <!-- Ações da composição -->
-                  <div class="d-flex gap-2">
-                    <!-- Remove selecionados da composição -->
-                    <button type="button" class="btn btn-outline-danger btn-sm" id="btnRemoverSelecionados">
-                      Remover selecionados
-                    </button>
-                  </div>
+                  <!-- Remove selecionados da composição -->
+                  <button type="button" class="btn btn-outline-danger btn-sm text-wrap ms-auto w-100 w-sm-auto"
+                    id="btnRemoverSelecionados">
+                    Remover selecionados
+                  </button>
                 </div>
 
                 <!-- Lista da composição (rolável) -->
@@ -101,6 +99,7 @@
                 </div>
               </div>
             </div>
+
 
             <!-- PESQUISA + LISTA (no mobile fica embaixo; no desktop fica à esquerda) -->
             <div class="col-12 col-lg-7 order-2 order-lg-1">
@@ -174,8 +173,8 @@
     crossorigin="anonymous"></script>
 
   <!-- JS da tela -->
-   <script src="js/ordenacao.js"></script>
-  <script src="js/vincular-pm.js"></script>
+  <script src="js/ordenacao.js"></script>
+  <script type="module" src="js/vincular-pm.js"></script>
 
   <!-- Uppercase global (não afeta RE por ser numérico) -->
   <script src="js/uppercase.js"></script>

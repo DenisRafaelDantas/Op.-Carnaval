@@ -1,43 +1,33 @@
 /* =========================
    Admin • Listagem de Unidades
-   - Lê do localStorage: opCarnaval_unidades
+   - Lê do Firestore: unidades
    - Exibe cards com: Editar + Excluir
    ========================= */
 
-const CHAVE_UNIDADES = "opCarnaval_unidades";
+import {
+  lerUnidadesFS,
+  excluirUnidadeFS
+} from "../../js/repositorio-firestore.js";
 
 /* Elementos da tela */
 const listaUnidades = document.getElementById("listaUnidades");
 const semUnidades = document.getElementById("semUnidades");
 
-/* Lê unidades do localStorage */
-function lerUnidades() {
-  const dados = JSON.parse(localStorage.getItem(CHAVE_UNIDADES) || "[]");
-  return Array.isArray(dados) ? dados : [];
-}
-
-/* Salva unidades no localStorage */
-function salvarUnidades(lista) {
-  localStorage.setItem(CHAVE_UNIDADES, JSON.stringify(lista));
-}
-
-/* Exclui unidade por ID */
-function excluirUnidadePorId(id) {
-  const lista = lerUnidades();
-
-  /* Remove a unidade que tiver o id informado */
-  const novaLista = lista.filter((u) => String(u.id) !== String(id));
-
-  /* Persiste no localStorage */
-  salvarUnidades(novaLista);
-}
-
-/* Renderiza lista */
-function renderizar() {
-  const unidades = lerUnidades();
-
-  /* Limpa área */
+/* Renderiza lista (Firestore) */
+async function renderizar() {
+  // Limpa área
   listaUnidades.innerHTML = "";
+  semUnidades.classList.add("d-none");
+
+  let unidades = [];
+  try {
+    unidades = await lerUnidadesFS();
+  } catch (err) {
+    console.error(err);
+    semUnidades.classList.remove("d-none");
+    semUnidades.textContent = "Falha ao carregar unidades do Firebase.";
+    return;
+  }
 
   /* Se estiver vazio, mostra mensagem */
   if (unidades.length === 0) {
@@ -52,6 +42,7 @@ function renderizar() {
 
   /* Cria um card por unidade */
   unidades.forEach((u) => {
+    const id = u.id || "";
     const cias = Array.isArray(u.cias) ? u.cias.join(", ") : "";
 
     const card = document.createElement("div");
@@ -68,7 +59,7 @@ function renderizar() {
         <div class="d-flex gap-2 mt-3">
           <!-- Editar unidade (reaproveita cadastro) -->
           <a class="btn btn-outline-primary btn-sm"
-             href="cadastro-unidade.html?id=${encodeURIComponent(u.id || "")}">
+             href="cadastro-unidade.html?id=${encodeURIComponent(id)}">
             Editar
           </a>
 
@@ -76,7 +67,7 @@ function renderizar() {
           <button type="button"
                   class="btn btn-outline-danger btn-sm"
                   data-acao="excluir-unidade"
-                  data-id="${encodeURIComponent(u.id || "")}"
+                  data-id="${encodeURIComponent(id)}"
                   data-nome="${encodeURIComponent(u.nome || "")}">
             Excluir
           </button>
@@ -89,7 +80,7 @@ function renderizar() {
 }
 
 /* Clique em Excluir (delegação robusta com closest) */
-listaUnidades.addEventListener("click", (event) => {
+listaUnidades.addEventListener("click", async (event) => {
   const alvo = event.target;
 
   /* Encontra o botão de excluir mesmo se clicar no texto */
@@ -109,11 +100,15 @@ listaUnidades.addEventListener("click", (event) => {
   const confirmou = confirm(`Confirma excluir a unidade "${nome}"?\nEssa ação não pode ser desfeita.`);
   if (!confirmou) return;
 
-  /* Exclui e re-renderiza */
-  excluirUnidadePorId(id);
-  renderizar();
+  /* Exclui no Firestore e re-renderiza */
+  try {
+    await excluirUnidadeFS(id);
+    await renderizar();
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível excluir a unidade. Verifique se você está logado como admin.");
+  }
 });
 
 /* Inicializa */
 renderizar();
-// Commit de verificação geral

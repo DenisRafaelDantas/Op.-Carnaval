@@ -1,34 +1,19 @@
 /* =========================
-   Admin • Vincular PM à Patrulha
-   =========================
-   Requisitos atendidos:
-   - Campo horário início e término (salvo na patrulha)
-   - Campo filtro por RE (6 dígitos, numérico)
-   - Lista de PMs rolável, com checkbox para selecionar múltiplos
-   - Filtra lista pelo RE digitado
-   - Botão limpar para limpar o RE
-   - Botão Adicionar: adiciona selecionados à composição da patrulha
-   - Composição:
-     - aparece ao lado no desktop
-     - aparece acima no mobile (via Bootstrap order)
-     - permite remover selecionados (checkbox) ou limpar tudo
+   Admin • Vincular PM à Patrulha (Firestore)
    ========================= */
 
-/* =========================
-   Chaves do "banco" (mock)
-   ========================= */
-const CHAVE_PMS = "opCarnaval_pms";
-const CHAVE_PATRULHAS = "opCarnaval_patrulhas";
+import {
+  lerPmsFS,
+  lerPatrulhasFS,
+  lerPatrulhaPorIdFS,
+  atualizarPatrulhaFS
+} from "../../js/repositorio-firestore.js";
 
-/* =========================
-   Captura parâmetros da URL
-   ========================= */
+/* Parâmetros */
 const params = new URLSearchParams(window.location.search);
-const idPatrulha = params.get("id"); // obrigatório
+const idPatrulha = params.get("id");
 
-/* =========================
-   Elementos da tela
-   ========================= */
+/* Elementos */
 const badgePatrulha = document.getElementById("badgePatrulha");
 
 const horaInicio = document.getElementById("horaInicio");
@@ -49,61 +34,14 @@ const btnCancelar = document.getElementById("btnCancelar");
 const btnSair = document.getElementById("btnSair");
 
 const btnRemoverSelecionados = document.getElementById("btnRemoverSelecionados");
-const btnLimparComposicao = document.getElementById("btnLimparComposicao");
 
-/* =========================
-   Leitura/Escrita no storage
-   ========================= */
-
-/* Lê PMs */
-function lerPms() {
-  const dados = JSON.parse(localStorage.getItem(CHAVE_PMS) || "[]");
-  return Array.isArray(dados) ? dados : [];
-}
-
-/* Lê patrulhas */
-function lerPatrulhas() {
-  const dados = JSON.parse(localStorage.getItem(CHAVE_PATRULHAS) || "[]");
-  return Array.isArray(dados) ? dados : [];
-}
-
-/* Salva patrulhas */
-function salvarPatrulhas(lista) {
-  localStorage.setItem(CHAVE_PATRULHAS, JSON.stringify(lista));
-}
-
-/* Busca patrulha por ID */
-function buscarPatrulhaPorId(id) {
-  return lerPatrulhas().find((p) => String(p.id) === String(id));
-}
-
-/* Atualiza patrulha por ID */
-function atualizarPatrulhaPorId(id, novosDados) {
-  const lista = lerPatrulhas();
-  const idx = lista.findIndex((p) => String(p.id) === String(id));
-
-  if (idx === -1) return false;
-
-  lista[idx] = { ...lista[idx], ...novosDados, id: String(id) };
-  salvarPatrulhas(lista);
-  return true;
-}
-
-/* =========================
-   Utilitários
-   ========================= */
-
-/* Normaliza RE (somente números, máximo 6) */
+/* Utilitários */
 function normalizarRe(valor) {
   return String(valor || "").replace(/\D/g, "").slice(0, 6);
 }
-
-/* Posto/graduação exibido */
 function postoExibicao(pm) {
   return pm.postoGraduacao?.trim() || "POSTO NÃO INF.";
 }
-
-/* Nome curto para listar (prioriza nome de guerra, senão nome completo) */
 function nomeExibicao(pm) {
   return (pm.nomeGuerra && pm.nomeGuerra.trim())
     ? pm.nomeGuerra.trim()
@@ -111,83 +49,171 @@ function nomeExibicao(pm) {
       ? pm.nomeCompleto.trim()
       : "NOME NÃO INFORMADO";
 }
-
-/* Monta texto "RE - NOME" */
 function textoPm(pm) {
   return `${postoExibicao(pm)} ${pm.re || "--"} ${nomeExibicao(pm)}`;
 }
-
-/* Garante estrutura de composição dentro da patrulha */
 function obterComposicao(patrulha) {
-  /* Usa array de REs */
   const lista = patrulha.composicaoRe;
   return Array.isArray(lista) ? lista : [];
 }
 
-/* Salva horários + composição na patrulha */
-function salvarDadosPatrulha(hInicio, hFim, composicaoRe) {
-  return atualizarPatrulhaPorId(idPatrulha, {
-    horarioInicio: hInicio || "",
-    horarioFim: hFim || "",
-    composicaoRe: Array.isArray(composicaoRe) ? composicaoRe : [],
-    atualizadoEm: new Date().toISOString()
+/* =========================
+   Ordenação por antiguidade (Coronel -> Sd 2ª Cl)
+   ========================= */
+
+function normalizarPosto(texto) {
+  return String(texto || "")
+    .toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Quanto maior, mais antigo (vem primeiro)
+const PESO_POSTO = new Map([
+  ["CEL", 100],
+  ["CORONEL", 100],
+
+  ["TC", 90],
+  ["TEN CEL", 90],
+  ["TENENTE CORONEL", 90],
+  ["TEN-CEL", 90],
+
+  ["MAJ", 80],
+  ["MAJOR", 80],
+
+  ["CAP", 70],
+  ["CAPITAO", 70],
+
+  ["1 TEN", 60],
+  ["1º TEN", 60],
+  ["1ºTEN", 60],
+  ["PRIMEIRO TENENTE", 60],
+  ["1TEN", 60],
+
+  ["2 TEN", 50],
+  ["2º TEN", 50],
+  ["2ºTEN", 50],
+  ["SEGUNDO TENENTE", 50],
+  ["2TEN", 50],
+
+  ["ASP", 45],
+  ["ASP OF", 45],
+  ["ASPIRANTE", 45],
+  ["ASPIRANTE A OFICIAL", 45],
+
+  ["ST", 40],
+  ["SUBTENENTE", 40],
+
+  ["1 SGT", 30],
+  ["1º SGT", 30],
+  ["1SGT", 30],
+  ["PRIMEIRO SARGENTO", 30],
+
+  ["2 SGT", 25],
+  ["2º SGT", 25],
+  ["2SGT", 25],
+  ["SEGUNDO SARGENTO", 25],
+
+  ["3 SGT", 20],
+  ["3º SGT", 20],
+  ["3SGT", 20],
+  ["TERCEIRO SARGENTO", 20],
+
+  ["CB", 10],
+  ["CABO", 10],
+
+  // Soldado: por padrão fica acima de "SD 2ª CL"
+  ["SD", 1],
+  ["SOLDADO", 1],
+
+  ["SD 2 CL", 0],
+  ["SD 2ª CL", 0],
+  ["SD 2A CL", 0],
+  ["SOLDADO 2 CLASSE", 0],
+  ["SOLDADO 2ª CLASSE", 0]
+]);
+
+function pesoPosto(pm) {
+  const p = normalizarPosto(pm?.postoGraduacao);
+
+  // tenta casar exatamente
+  if (PESO_POSTO.has(p)) return PESO_POSTO.get(p);
+
+  // tenta casar por "começa com" (ex.: "1º SGT QPPM", "CAP QOPM", etc.)
+  for (const [chave, peso] of PESO_POSTO.entries()) {
+    if (p.startsWith(chave)) return peso;
+  }
+
+  // desconhecido vai pro fim, mas não quebra
+  return -1;
+}
+
+function ordenarPmsPorAntiguidade(lista) {
+  return [...lista].sort((a, b) => {
+    const pa = pesoPosto(a);
+    const pb = pesoPosto(b);
+    if (pb !== pa) return pb - pa; // maior primeiro (mais antigo)
+
+    // desempate por RE (crescente)
+    const rea = String(a.re || "");
+    const reb = String(b.re || "");
+    if (rea !== reb) return rea.localeCompare(reb, "pt-BR");
+
+    // desempate por nome
+    const na = nomeExibicao(a);
+    const nb = nomeExibicao(b);
+    return na.localeCompare(nb, "pt-BR");
   });
 }
 
-/* =========================
-   Disponibilidade de PMs
-   ========================= */
+/* Estado em memória */
+let patrulhaAtual = null;
+let pms = [];
+let composicaoRe = [];
+let patrulhasTodas = [];
 
-/* Retorna todas as patrulhas (para calcular quem já está alocado) */
-function todasAsPatrulhas() {
-  return lerPatrulhas();
+/* =========================
+   Persistência (Firestore)
+   ========================= */
+async function salvarDadosPatrulha(hInicio, hFim, composicao) {
+  await atualizarPatrulhaFS(idPatrulha, {
+    horarioInicio: hInicio || "",
+    horarioFim: hFim || "",
+    composicaoRe: Array.isArray(composicao) ? composicao : [],
+    atualizadoEm: new Date().toISOString()
+  });
+
+  // atualiza cache de patrulhas (para refletir disponibilidade)
+  patrulhasTodas = await lerPatrulhasFS();
 }
 
-/* Monta um Set com todos os REs que já estão em alguma patrulha */
 function obterResEmUso() {
-  const patrulhas = todasAsPatrulhas();
   const usados = new Set();
-
-  patrulhas.forEach((p) => {
+  patrulhasTodas.forEach((p) => {
     const comp = Array.isArray(p.composicaoRe) ? p.composicaoRe : [];
     comp.forEach((re) => usados.add(String(re)));
   });
-
   return usados;
 }
 
-/* Mapa RE -> Patrulha (para dar mensagem quando o RE pesquisado está ocupado) */
 function obterMapaReParaPatrulha() {
-  const patrulhas = todasAsPatrulhas();
   const mapa = new Map();
-
-  patrulhas.forEach((p) => {
+  patrulhasTodas.forEach((p) => {
     const comp = Array.isArray(p.composicaoRe) ? p.composicaoRe : [];
     comp.forEach((re) => {
-      /* Guarda o número da patrulha onde está alocado */
       mapa.set(String(re), String(p.numero || "--"));
     });
   });
-
   return mapa;
 }
-
-
-/* =========================
-   Estado em memória (tela)
-   ========================= */
-let patrulhaAtual = null;      // objeto da patrulha
-let pms = [];                  // lista de PMs
-let composicaoRe = [];         // array de REs já adicionados na patrulha
 
 /* =========================
    Renderização • Lista de PMs
    ========================= */
 function renderizarListaPms() {
-  /* Limpa */
   listaPms.innerHTML = "";
 
-  /* Se não houver PMs cadastrados */
   if (pms.length === 0) {
     msgSemPms.classList.remove("d-none");
     statusLista.textContent = "Nenhum PM cadastrado.";
@@ -196,38 +222,33 @@ function renderizarListaPms() {
 
   msgSemPms.classList.add("d-none");
 
-  /* Calcula quem já está em uso em alguma patrulha */
   const resEmUso = obterResEmUso();
   const mapaRePatrulha = obterMapaReParaPatrulha();
 
-  /* Lista “disponível”: PM que NÃO está em nenhuma patrulha */
+  // disponíveis = quem não está em nenhuma patrulha
   let disponiveis = pms.filter((pm) => !resEmUso.has(String(pm.re)));
 
-  /* Filtro por RE */
+  // ✅ Ordena por antiguidade aqui
+  disponiveis = ordenarPmsPorAntiguidade(disponiveis);
+
   const reFiltro = normalizarRe(filtroRe.value);
 
   if (reFiltro.length > 0) {
-    /* Se digitou RE, tenta achar na lista disponível */
     disponiveis = disponiveis.filter((pm) => String(pm.re) === reFiltro);
     statusLista.textContent = `Filtrando por RE: ${reFiltro}`;
   } else {
     statusLista.textContent = "Mostrando apenas PMs disponíveis (não vinculados a nenhuma patrulha).";
   }
 
-  /* Se não encontrou ninguém */
   if (disponiveis.length === 0) {
     const bloco = document.createElement("div");
     bloco.className = "text-body-secondary small";
 
-    /* Se houver filtro e o PM estiver alocado em outra patrulha, informa */
     if (reFiltro.length === 6) {
       const patrulhaOndeEsta = mapaRePatrulha.get(reFiltro);
-
-      if (patrulhaOndeEsta) {
-        bloco.textContent = `RE ${reFiltro} já está vinculado à Patrulha ${patrulhaOndeEsta}.`;
-      } else {
-        bloco.textContent = "Nenhum PM disponível encontrado com esse RE.";
-      }
+      bloco.textContent = patrulhaOndeEsta
+        ? `RE ${reFiltro} já está vinculado à Patrulha ${patrulhaOndeEsta}.`
+        : "Nenhum PM disponível encontrado com esse RE.";
     } else {
       bloco.textContent = "Nenhum PM disponível no momento.";
     }
@@ -236,7 +257,6 @@ function renderizarListaPms() {
     return;
   }
 
-  /* Renderiza cada PM disponível */
   disponiveis.forEach((pm) => {
     const item = document.createElement("div");
     item.className = "d-flex align-items-center justify-content-between gap-2 py-2 border-bottom";
@@ -263,15 +283,12 @@ function renderizarListaPms() {
   });
 }
 
-
 /* =========================
    Renderização • Composição
    ========================= */
 function renderizarComposicao() {
-  /* Limpa */
   listaComposicao.innerHTML = "";
 
-  /* Se vazio, mostra mensagem */
   if (composicaoRe.length === 0) {
     msgComposicaoVazia.classList.remove("d-none");
     return;
@@ -279,34 +296,24 @@ function renderizarComposicao() {
 
   msgComposicaoVazia.classList.add("d-none");
 
-  /* Para montar a composição com nomes, cria um map RE -> PM */
   const mapPms = new Map(pms.map((pm) => [String(pm.re), pm]));
 
-  /* Renderiza cada RE */
   composicaoRe.forEach((re) => {
     const pm = mapPms.get(String(re));
 
     const item = document.createElement("div");
     item.className = "d-flex align-items-center gap-2 py-2 border-bottom";
 
-    /* Checkbox para remover */
     const check = document.createElement("input");
     check.type = "checkbox";
     check.className = "form-check-input";
     check.id = `remPm_${re}`;
     check.dataset.re = String(re);
 
-    /* Texto */
     const texto = document.createElement("label");
     texto.className = "form-check-label";
     texto.setAttribute("for", check.id);
-
-    if (pm) {
-      texto.textContent = textoPm(pm);
-    } else {
-      /* Caso o PM tenha sido excluído do cadastro, ainda aparece como RE “órfão” */
-      texto.textContent = `${re} - (PM não encontrado no cadastro)`;
-    }
+    texto.textContent = pm ? textoPm(pm) : `${re} - (PM não encontrado no cadastro)`;
 
     item.appendChild(check);
     item.appendChild(texto);
@@ -318,32 +325,20 @@ function renderizarComposicao() {
 /* =========================
    Ações
    ========================= */
-
-/* Adiciona selecionados da lista de PMs à composição */
-function adicionarSelecionados() {
-  /* Valida horários (mínimo: preenchido) */
+async function adicionarSelecionados() {
   const hIni = String(horaInicio.value || "").trim();
   const hFim = String(horaFim.value || "").trim();
 
   let ok = true;
 
-  if (!hIni) {
-    horaInicio.classList.add("is-invalid");
-    ok = false;
-  } else {
-    horaInicio.classList.remove("is-invalid");
-  }
+  if (!hIni) { horaInicio.classList.add("is-invalid"); ok = false; }
+  else horaInicio.classList.remove("is-invalid");
 
-  if (!hFim) {
-    horaFim.classList.add("is-invalid");
-    ok = false;
-  } else {
-    horaFim.classList.remove("is-invalid");
-  }
+  if (!hFim) { horaFim.classList.add("is-invalid"); ok = false; }
+  else horaFim.classList.remove("is-invalid");
 
   if (!ok) return;
 
-  /* Pega checks marcados na lista de PMs */
   const checks = listaPms.querySelectorAll('input[type="checkbox"][data-re]');
   const selecionados = [];
 
@@ -351,37 +346,29 @@ function adicionarSelecionados() {
     if (c.checked) selecionados.push(String(c.dataset.re));
   });
 
-  /* Se nada selecionado */
   if (selecionados.length === 0) {
     alert("Selecione pelo menos um PM para adicionar.");
     return;
   }
 
-  /* Adiciona evitando duplicidade */
   selecionados.forEach((re) => {
     if (!composicaoRe.includes(re)) composicaoRe.push(re);
   });
 
-  /* Salva na patrulha */
-  const salvou = salvarDadosPatrulha(hIni, hFim, composicaoRe);
-  if (!salvou) {
-    alert("Falha ao salvar: patrulha não encontrada.");
-    return;
+  try {
+    await salvarDadosPatrulha(hIni, hFim, composicaoRe);
+    renderizarComposicao();
+    renderizarListaPms();
+
+    checks.forEach((c) => (c.checked = false));
+    alert("PM(s) adicionados à patrulha.");
+  } catch (err) {
+    console.error(err);
+    alert("Falha ao salvar no Firebase. Verifique se você está logado como admin.");
   }
-
-  /* Atualiza interface */
-  renderizarComposicao();
-  renderizarListaPms();
-
-  /* Limpa seleção (melhora operação) */
-  checks.forEach((c) => (c.checked = false));
-
-  alert("PM(s) adicionados à patrulha.");
 }
 
-/* Remove selecionados na composição */
-function removerSelecionadosDaComposicao() {
-  /* Pega checks marcados na composição */
+async function removerSelecionadosDaComposicao() {
   const checks = listaComposicao.querySelectorAll('input[type="checkbox"][data-re]');
   const remover = [];
 
@@ -394,52 +381,25 @@ function removerSelecionadosDaComposicao() {
     return;
   }
 
-  /* Remove */
   composicaoRe = composicaoRe.filter((re) => !remover.includes(String(re)));
 
-  /* Salva */
-  const salvou = salvarDadosPatrulha(horaInicio.value, horaFim.value, composicaoRe);
-  if (!salvou) {
-    alert("Falha ao salvar: patrulha não encontrada.");
-    return;
+  try {
+    await salvarDadosPatrulha(horaInicio.value, horaFim.value, composicaoRe);
+    renderizarComposicao();
+    renderizarListaPms();
+  } catch (err) {
+    console.error(err);
+    alert("Falha ao salvar no Firebase. Verifique se você está logado como admin.");
   }
-
-  /* Atualiza UI */
-  renderizarComposicao();
-  renderizarListaPms();
 }
 
-/* Limpa toda a composição */
-function limparComposicao() {
-  const confirmou = confirm("Confirma remover TODOS os PMs da composição desta patrulha?");
-  if (!confirmou) return;
-
-  composicaoRe = [];
-
-  const salvou = salvarDadosPatrulha(horaInicio.value, horaFim.value, composicaoRe);
-  if (!salvou) {
-    alert("Falha ao salvar: patrulha não encontrada.");
-    return;
-  }
-
-  renderizarComposicao();
-  renderizarListaPms();
-}
-
-/* Cancelar (limpa filtro e seleção) */
 function cancelar() {
-  /* Limpa filtro */
   filtroRe.value = "";
-
-  /* Desmarca todos os checks da lista */
   const checks = listaPms.querySelectorAll('input[type="checkbox"][data-re]');
   checks.forEach((c) => (c.checked = false));
-
-  /* Re-renderiza lista */
   renderizarListaPms();
 }
 
-/* Sair (volta para patrulhas) */
 function sair() {
   window.location.href = "patrulhas.html";
 }
@@ -447,67 +407,60 @@ function sair() {
 /* =========================
    Inicialização
    ========================= */
-(function init() {
-  /* Se não vier id na URL, não tem como trabalhar */
+(async function init() {
   if (!idPatrulha) {
     alert("ID da patrulha não informado. Volte e tente novamente.");
     window.location.href = "patrulhas.html";
     return;
   }
 
-  /* Carrega dados */
-  pms = ordenarPmsPorAntiguidade(lerPms());
+  try {
+    // carrega tudo do Firestore
+    pms = await lerPmsFS();
+    patrulhasTodas = await lerPatrulhasFS();
+    patrulhaAtual = await lerPatrulhaPorIdFS(idPatrulha);
 
+    if (!patrulhaAtual) {
+      alert("Patrulha não encontrada. Volte e tente novamente.");
+      window.location.href = "patrulhas.html";
+      return;
+    }
 
-  patrulhaAtual = buscarPatrulhaPorId(idPatrulha);
+    badgePatrulha.textContent = `Patrulha ${patrulhaAtual.numero || "--"}`;
 
-  if (!patrulhaAtual) {
-    alert("Patrulha não encontrada. Volte e tente novamente.");
+    if (patrulhaAtual.horarioInicio) horaInicio.value = patrulhaAtual.horarioInicio;
+    if (patrulhaAtual.horarioFim) horaFim.value = patrulhaAtual.horarioFim;
+
+    composicaoRe = obterComposicao(patrulhaAtual).map(String);
+
+    // renderiza
+    renderizarComposicao();
+    renderizarListaPms();
+  } catch (err) {
+    console.error(err);
+    alert("Falha ao carregar dados do Firebase. Verifique sua conexão e se está logado como admin.");
     window.location.href = "patrulhas.html";
-    return;
   }
-
-  /* Mostra número da patrulha */
-  badgePatrulha.textContent = `Patrulha ${patrulhaAtual.numero || "--"}`;
-
-  /* Carrega horários se já existirem */
-  if (patrulhaAtual.horarioInicio) horaInicio.value = patrulhaAtual.horarioInicio;
-  if (patrulhaAtual.horarioFim) horaFim.value = patrulhaAtual.horarioFim;
-
-  /* Carrega composição */
-  composicaoRe = obterComposicao(patrulhaAtual).map(String);
-
-  /* Renderizações iniciais */
-  renderizarComposicao();
-  renderizarListaPms();
 })();
 
 /* =========================
    Eventos
    ========================= */
-
-/* Filtro RE: só número, 6 dígitos, filtra ao digitar */
 filtroRe.addEventListener("input", () => {
   filtroRe.value = normalizarRe(filtroRe.value);
   renderizarListaPms();
 });
 
-/* Botão limpar filtro */
 btnLimparFiltro.addEventListener("click", () => {
   filtroRe.value = "";
   renderizarListaPms();
 });
 
-/* Horários: remove erro visual ao mudar */
 horaInicio.addEventListener("change", () => horaInicio.classList.remove("is-invalid"));
 horaFim.addEventListener("change", () => horaFim.classList.remove("is-invalid"));
 
-/* Botões inferiores */
 btnAdicionar.addEventListener("click", adicionarSelecionados);
 btnCancelar.addEventListener("click", cancelar);
 btnSair.addEventListener("click", sair);
 
-/* Ações da composição */
 btnRemoverSelecionados.addEventListener("click", removerSelecionadosDaComposicao);
-btnLimparComposicao.addEventListener("click", limparComposicao);
-// Commit de verificação geral

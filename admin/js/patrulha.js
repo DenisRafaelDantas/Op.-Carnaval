@@ -1,22 +1,13 @@
 /* =========================
-   Admin • Cadastro de Patrulha (Criar/Editar)
-   =========================
-   Armazena:
-   - numero (automático: 01, 02, 03...)
-   - CPP (texto/endereço)
-   - mapa (texto: pode ser link ou iframe)
-   - missão (texto)
-
-   Modo:
-   - CADASTRAR: abre sem ?id
-   - EDITAR: abre com ?id=xxxx
-
-   Storage:
-   - opCarnaval_patrulhas
+   Admin • Cadastro de Patrulha (Criar/Editar) • Firestore
    ========================= */
 
-/* Chave do "banco" (mock) */
-const CHAVE_PATRULHAS = "opCarnaval_patrulhas";
+import {
+  lerPatrulhasFS,
+  criarPatrulhaFS,
+  salvarPatrulhaFS,
+  lerPatrulhaPorIdFS
+} from "../../js/repositorio-firestore.js";
 
 /* =========================
    Helper: buscar elemento por vários IDs possíveis
@@ -57,7 +48,6 @@ const inputCpp = porIdPossiveis([
   "enderecoPatrulha"
 ]);
 
-/* “Mapa” pode ser input ou textarea */
 const inputMapa = porIdPossiveis([
   "mapa",
   "mapaGoogle",
@@ -91,69 +81,8 @@ if (!formPatrulha || !inputNumero || !inputCpp || !inputMapa || !inputMissao || 
    Estado (modo)
    ========================= */
 const params = new URLSearchParams(window.location.search);
-const idEdicao = params.get("id");      // string
-const MODO_EDICAO = Boolean(idEdicao);  // true/false
-
-/* =========================
-   Storage helpers
-   ========================= */
-function lerPatrulhas() {
-  const dados = JSON.parse(localStorage.getItem(CHAVE_PATRULHAS) || "[]");
-  return Array.isArray(dados) ? dados : [];
-}
-
-function salvarPatrulhas(lista) {
-  localStorage.setItem(CHAVE_PATRULHAS, JSON.stringify(lista));
-}
-
-function buscarPatrulhaPorId(id) {
-  return lerPatrulhas().find((p) => String(p.id) === String(id));
-}
-
-/* Gera ID fixo para patrulha */
-function gerarIdPatrulha() {
-  /* Se o navegador suportar UUID, usa */
-  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
-
-  /* Fallback */
-  return `pat_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
-}
-
-/* Número automático: pega o maior número e soma 1 (01, 02...) */
-function proximoNumeroPatrulha() {
-  const lista = lerPatrulhas();
-
-  /* Extrai números válidos */
-  const nums = lista
-    .map((p) => String(p.numero || "").replace(/\D/g, ""))
-    .filter((s) => s.length > 0)
-    .map((s) => Number(s))
-    .filter((n) => Number.isFinite(n));
-
-  const max = nums.length ? Math.max(...nums) : 0;
-  const prox = max + 1;
-
-  /* Formata com 2 dígitos (01,02... até 99). Se passar de 99, fica 100 etc. */
-  return prox < 100 ? String(prox).padStart(2, "0") : String(prox);
-}
-
-/* Atualiza patrulha por ID (retorna true se atualizou) */
-function atualizarPatrulhaPorId(id, novosDados) {
-  const lista = lerPatrulhas();
-  const idx = lista.findIndex((p) => String(p.id) === String(id));
-  if (idx === -1) return false;
-
-  lista[idx] = { ...lista[idx], ...novosDados, id: String(id) };
-  salvarPatrulhas(lista);
-  return true;
-}
-
-/* Cria patrulha nova */
-function criarPatrulha(p) {
-  const lista = lerPatrulhas();
-  lista.push(p);
-  salvarPatrulhas(lista);
-}
+const idEdicao = params.get("id");      // string docId do Firestore
+const MODO_EDICAO = Boolean(idEdicao);
 
 /* =========================
    Validação simples
@@ -167,18 +96,39 @@ function marcarInvalido(el, invalido) {
   else el.classList.remove("is-invalid");
 }
 
+/* Número automático: pega o maior número e soma 1 (01, 02...) */
+async function proximoNumeroPatrulhaFS() {
+  const lista = await lerPatrulhasFS();
+
+  const nums = lista
+    .map((p) => String(p.numero || "").replace(/\D/g, ""))
+    .filter((s) => s.length > 0)
+    .map((s) => Number(s))
+    .filter((n) => Number.isFinite(n));
+
+  const max = nums.length ? Math.max(...nums) : 0;
+  const prox = max + 1;
+
+  return prox < 100 ? String(prox).padStart(2, "0") : String(prox);
+}
+
 /* =========================
    Modo editar: carregar dados
    ========================= */
-function aplicarModoEdicaoSeNecessario() {
+async function aplicarModoEdicaoSeNecessario() {
   if (!MODO_EDICAO) {
     /* Cadastro: número automático e travado */
-    inputNumero.value = proximoNumeroPatrulha();
+    inputNumero.value = await proximoNumeroPatrulhaFS();
     inputNumero.disabled = true;
     return;
   }
 
-  const patrulha = buscarPatrulhaPorId(idEdicao);
+  let patrulha = null;
+  try {
+    patrulha = await lerPatrulhaPorIdFS(idEdicao);
+  } catch (err) {
+    console.error(err);
+  }
 
   if (!patrulha) {
     alert("Patrulha não encontrada para edição.");
@@ -203,9 +153,10 @@ function aplicarModoEdicaoSeNecessario() {
 /* =========================
    Inicialização
    ========================= */
-(function init() {
+(async function init() {
   if (!formPatrulha) return;
-  aplicarModoEdicaoSeNecessario();
+  await aplicarModoEdicaoSeNecessario();
+  atualizarPreviaMapa(); // importante no modo EDITAR
 })();
 
 /* =========================
@@ -218,7 +169,7 @@ function aplicarModoEdicaoSeNecessario() {
   campo.addEventListener("input", () => marcarInvalido(campo, false));
 });
 
-/* Cancelar: volta para listagem de patrulhas */
+/* Cancelar */
 if (btnCancelar) {
   btnCancelar.addEventListener("click", () => {
     window.location.href = "patrulhas.html";
@@ -227,93 +178,84 @@ if (btnCancelar) {
 
 /* Submit: cria ou edita */
 if (formPatrulha) {
-  formPatrulha.addEventListener("submit", (event) => {
+  formPatrulha.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     let ok = true;
 
-    /* Validações mínimas (obrigatórios) */
     if (campoVazio(inputCpp)) { marcarInvalido(inputCpp, true); ok = false; }
     if (campoVazio(inputMapa)) { marcarInvalido(inputMapa, true); ok = false; }
     if (campoVazio(inputMissao)) { marcarInvalido(inputMissao, true); ok = false; }
 
     if (!ok) return;
 
-    /* Dados */
     const dados = {
-      numero: String(inputNumero.value || "").trim(), // 01,02...
+      numero: String(inputNumero.value || "").trim(),
       cpp: String(inputCpp.value || "").trim(),
       mapa: String(inputMapa.value || "").trim(),
       missao: String(inputMissao.value || "").trim()
     };
 
-    /* Editar */
-    if (MODO_EDICAO) {
-      const atualizou = atualizarPatrulhaPorId(idEdicao, {
-        ...dados,
-        atualizadoEm: new Date().toISOString()
-      });
+    try {
+      /* EDITAR */
+      if (MODO_EDICAO) {
+        await salvarPatrulhaFS(idEdicao, {
+          ...dados,
+          atualizadoEm: new Date().toISOString()
+        });
 
-      if (!atualizou) {
-        alert("Falha ao atualizar: patrulha não encontrada.");
+        alert(`PATRULHA ${dados.numero} ATUALIZADA.`);
+        window.location.href = "patrulhas.html";
         return;
       }
 
-      alert(`PATRULHA ${dados.numero} ATUALIZADA.`);
-      window.location.href = "patrulhas.html";
-      return;
+      /* CADASTRAR */
+      const nova = {
+        ...dados,
+        // deixa composição pronta para o vínculo
+        composicaoRe: [],
+        criadoEm: new Date().toISOString()
+      };
+
+      await criarPatrulhaFS(nova);
+
+      alert(`PATRULHA ${dados.numero} CADASTRADA.`);
+
+      /* Prepara próxima */
+      inputNumero.value = await proximoNumeroPatrulhaFS();
+      inputCpp.value = "";
+      inputMapa.value = "";
+      inputMissao.value = "";
+
+      marcarInvalido(inputCpp, false);
+      marcarInvalido(inputMapa, false);
+      marcarInvalido(inputMissao, false);
+
+      atualizarPreviaMapa();
+    } catch (err) {
+      console.error(err);
+      alert("Não foi possível salvar a patrulha. Verifique se você está logado como admin.");
     }
-
-    /* Cadastrar */
-    const nova = {
-      id: gerarIdPatrulha(),
-      ...dados,
-      criadoEm: new Date().toISOString()
-    };
-
-    criarPatrulha(nova);
-
-    alert(`PATRULHA ${dados.numero} CADASTRADA.`);
-
-    /* Prepara para cadastrar próxima: incrementa número e limpa campos */
-    inputNumero.value = proximoNumeroPatrulha();
-    inputCpp.value = "";
-    inputMapa.value = "";
-    inputMissao.value = "";
-
-    marcarInvalido(inputCpp, false);
-    marcarInvalido(inputMapa, false);
-    marcarInvalido(inputMissao, false);
   });
 }
 
 /* =========================
-   Prévia do mapa (Google Maps)
-   =========================
-   HTML:
-   - Campo:      #mapa
-   - Iframe:     #mapaPreview
-   - Mensagem:   #mapaVazio
-   - Botão:      #btnLimparMapa
+   Prévia do mapa (Google Maps) — mantida
    ========================= */
 
-/* Elementos da prévia */
-const iframePreview = document.getElementById("mapaPreview");  // iframe da prévia
-const avisoMapaVazio = document.getElementById("mapaVazio");   // texto "Cole um link..."
-const btnLimparMapa = document.getElementById("btnLimparMapa"); // botão limpar
+const iframePreview = document.getElementById("mapaPreview");
+const avisoMapaVazio = document.getElementById("mapaVazio");
+const btnLimparMapa = document.getElementById("btnLimparMapa");
 
-/* Remove aspas se o usuário colar "https://..." */
 function removerAspasExternas(texto) {
   return String(texto || "").trim().replace(/^["']|["']$/g, "").trim();
 }
 
-/* Extrai src de um iframe colado */
 function extrairSrcIframe(texto) {
   const match = String(texto || "").match(/src\s*=\s*["']([^"']+)["']/i);
   return match ? match[1] : "";
 }
 
-/* Verifica se é um link embed válido (inclui My Maps) */
 function ehLinkEmbedValido(url) {
   const u = String(url || "");
   return (
@@ -322,16 +264,12 @@ function ehLinkEmbedValido(url) {
   );
 }
 
-/* Atualiza a prévia do mapa */
 function atualizarPreviaMapa() {
-  /* Se a página não tiver os elementos, não faz nada */
   if (!inputMapa || !iframePreview || !avisoMapaVazio) return;
 
-  /* Pega o conteúdo do campo */
   const bruto = String(inputMapa.value || "");
   const texto = removerAspasExternas(bruto);
 
-  /* Se vazio: limpa preview e mostra aviso */
   if (!texto.trim()) {
     iframePreview.src = "";
     avisoMapaVazio.classList.remove("d-none");
@@ -340,37 +278,29 @@ function atualizarPreviaMapa() {
 
   let srcFinal = "";
 
-  /* Se colou um iframe: extrai o src */
   if (texto.toLowerCase().includes("<iframe")) {
     srcFinal = extrairSrcIframe(texto);
   } else {
-    /* Se colou um link embed direto */
     if (ehLinkEmbedValido(texto)) {
       srcFinal = texto;
     }
   }
 
-  /* Se não conseguiu obter src: limpa e mostra aviso */
   if (!srcFinal) {
     iframePreview.src = "";
     avisoMapaVazio.classList.remove("d-none");
     return;
   }
 
-  /* Atualiza o iframe */
   iframePreview.src = srcFinal;
-
-  /* Esconde o aviso */
   avisoMapaVazio.classList.add("d-none");
 }
 
-/* Eventos para atualizar a prévia ao digitar/colar */
 if (inputMapa) {
   inputMapa.addEventListener("input", atualizarPreviaMapa);
   inputMapa.addEventListener("change", atualizarPreviaMapa);
 }
 
-/* Botão "Limpar mapa" */
 if (btnLimparMapa) {
   btnLimparMapa.addEventListener("click", () => {
     if (!inputMapa || !iframePreview || !avisoMapaVazio) return;
@@ -382,6 +312,5 @@ if (btnLimparMapa) {
   });
 }
 
-/* Atualiza prévia ao abrir a tela (importante no modo EDITAR) */
+// primeira chamada (em cadastro)
 atualizarPreviaMapa();
-// Commit de verificação geral

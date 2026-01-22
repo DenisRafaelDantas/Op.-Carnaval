@@ -1,14 +1,12 @@
 /* =========================
-   Operação • Tela do Policial
+   Operação • Tela do Policial (Firestore)
    =========================
    - Recebe o RE pela URL (?re=123456) OU pelo sessionStorage
-   - Procura a patrulha que contém esse RE em composicaoRe
-   - Exibe: horário, patrulha, CPP, missão e mapa
+   - Busca patrulhas no Firestore e encontra qual contém esse RE em composicaoRe
+   - Exibe: horário, patrulha, composição, CPP, missão e mapa
    ========================= */
 
-/* Chaves do "banco" (mock) */
-const CHAVE_PMS = "opCarnaval_pms";
-const CHAVE_PATRULHAS = "opCarnaval_patrulhas";
+import { lerPatrulhasFS, lerPmsFS } from "./repositorio-firestore.js";
 
 /* Elementos da tela */
 const badgeRe = document.getElementById("badgeRe");
@@ -24,24 +22,10 @@ const txtMissao = document.getElementById("txtMissao");
 const mapaIframe = document.getElementById("mapaIframe");
 const mapaVazio = document.getElementById("mapaVazio");
 
+const listaComposicaoPatrulha = document.getElementById("listaComposicaoPatrulha");
+const msgSemComposicao = document.getElementById("msgSemComposicao");
+
 const btnVoltar = document.getElementById("btnVoltar");
-const btnSair = document.getElementById("btnSair");
-
-/* =========================
-   Funções de storage
-   ========================= */
-
-/* Lê patrulhas */
-function lerPatrulhas() {
-  const dados = JSON.parse(localStorage.getItem(CHAVE_PATRULHAS) || "[]");
-  return Array.isArray(dados) ? dados : [];
-}
-
-/* Lê PMs (não é obrigatório pra tela, mas pode ser útil depois) */
-function lerPms() {
-  const dados = JSON.parse(localStorage.getItem(CHAVE_PMS) || "[]");
-  return Array.isArray(dados) ? dados : [];
-}
 
 /* =========================
    Utilitários
@@ -106,20 +90,129 @@ function aplicarMapa(valorMapa) {
   mapaVazio.classList.add("d-none");
 }
 
-/* Procura a patrulha do PM pelo RE */
-function encontrarPatrulhaDoRe(re) {
-  const patrulhas = lerPatrulhas();
+/* =========================
+   Ordenação por antiguidade (pra composição ficar bonita)
+   ========================= */
 
+function normalizarPosto(texto) {
+  return String(texto || "")
+    .toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const PESO_POSTO = new Map([
+  ["CEL", 100], ["CORONEL", 100],
+  ["TC", 90], ["TEN CEL", 90], ["TENENTE CORONEL", 90], ["TEN-CEL", 90],
+  ["MAJ", 80], ["MAJOR", 80],
+  ["CAP", 70], ["CAPITAO", 70],
+  ["1 TEN", 60], ["1º TEN", 60], ["1ºTEN", 60], ["PRIMEIRO TENENTE", 60], ["1TEN", 60],
+  ["2 TEN", 50], ["2º TEN", 50], ["2ºTEN", 50], ["SEGUNDO TENENTE", 50], ["2TEN", 50],
+  ["ASP", 45], ["ASP OF", 45], ["ASPIRANTE", 45], ["ASPIRANTE A OFICIAL", 45],
+  ["ST", 40], ["SUBTENENTE", 40],
+  ["1 SGT", 30], ["1º SGT", 30], ["1SGT", 30], ["PRIMEIRO SARGENTO", 30],
+  ["2 SGT", 25], ["2º SGT", 25], ["2SGT", 25], ["SEGUNDO SARGENTO", 25],
+  ["3 SGT", 20], ["3º SGT", 20], ["3SGT", 20], ["TERCEIRO SARGENTO", 20],
+  ["CB", 10], ["CABO", 10],
+  ["SD", 1], ["SOLDADO", 1],
+  ["SD 2 CL", 0], ["SD 2ª CL", 0], ["SD 2A CL", 0],
+  ["SOLDADO 2 CLASSE", 0], ["SOLDADO 2ª CLASSE", 0]
+]);
+
+function pesoPostoTexto(postoGraduacao) {
+  const p = normalizarPosto(postoGraduacao);
+
+  if (PESO_POSTO.has(p)) return PESO_POSTO.get(p);
+
+  for (const [chave, peso] of PESO_POSTO.entries()) {
+    if (p.startsWith(chave)) return peso;
+  }
+
+  return -1;
+}
+
+function ordenarComposicaoPorAntiguidade(itens) {
+  return [...itens].sort((a, b) => {
+    const pa = pesoPostoTexto(a?.postoGraduacao);
+    const pb = pesoPostoTexto(b?.postoGraduacao);
+    if (pb !== pa) return pb - pa;
+
+    const rea = String(a?.re || "");
+    const reb = String(b?.re || "");
+    if (rea !== reb) return rea.localeCompare(reb, "pt-BR");
+
+    const na = String(a?.nomeExibir || "");
+    const nb = String(b?.nomeExibir || "");
+    return na.localeCompare(nb, "pt-BR");
+  });
+}
+
+/* =========================
+   Firestore helpers
+   ========================= */
+
+/* Procura a patrulha do PM pelo RE (varrendo patrulhas) */
+function encontrarPatrulhaDoReEmLista(re, patrulhas) {
   return patrulhas.find((p) => {
     const comp = Array.isArray(p.composicaoRe) ? p.composicaoRe : [];
     return comp.map(String).includes(String(re));
   });
 }
 
+function nomePreferido(pm) {
+  return pm?.nomeGuerra?.trim() || pm?.nomeCompleto?.trim() || "(Sem nome)";
+}
+
+function postoPreferido(pm) {
+  return pm?.postoGraduacao?.trim() || "--";
+}
+
+/* Renderiza composição da patrulha */
+function renderizarComposicaoDaPatrulha(patrulha, pms) {
+  if (!listaComposicaoPatrulha || !msgSemComposicao) return;
+
+  listaComposicaoPatrulha.innerHTML = "";
+  msgSemComposicao.classList.add("d-none");
+
+  const composicao = Array.isArray(patrulha?.composicaoRe) ? patrulha.composicaoRe : [];
+
+  if (composicao.length === 0) {
+    msgSemComposicao.classList.remove("d-none");
+    return;
+  }
+
+  const mapPms = new Map((Array.isArray(pms) ? pms : []).map((pm) => [String(pm.re), pm]));
+
+  // monta itens com dados (e ordena)
+  const itens = composicao.map((re) => {
+    const pm = mapPms.get(String(re));
+    return {
+      re: String(re),
+      postoGraduacao: pm?.postoGraduacao || "",
+      nomeExibir: pm ? nomePreferido(pm) : "(não encontrado no cadastro)",
+      existe: Boolean(pm)
+    };
+  });
+
+  const ordenados = ordenarComposicaoPorAntiguidade(itens);
+
+  ordenados.forEach((item) => {
+    const texto = item.existe
+      ? `${postoPreferido({ postoGraduacao: item.postoGraduacao })} ${item.re} – ${item.nomeExibir}`
+      : `RE ${item.re} – (não encontrado no cadastro)`;
+
+    const li = document.createElement("li");
+    li.className = "list-group-item";
+    li.textContent = texto;
+    listaComposicaoPatrulha.appendChild(li);
+  });
+}
+
 /* =========================
    Inicialização
    ========================= */
-(function init() {
+(async function init() {
   /* 1) Obtém RE pela URL (preferência) */
   const params = new URLSearchParams(window.location.search);
   const reUrl = normalizarRe(params.get("re"));
@@ -139,35 +232,49 @@ function encontrarPatrulhaDoRe(re) {
     return;
   }
 
-  /* Procura a patrulha do RE */
-  const patrulha = encontrarPatrulhaDoRe(re);
+  try {
+    // Carrega patrulhas e PMs do Firestore
+    const [patrulhas, pms] = await Promise.all([
+      lerPatrulhasFS(),
+      lerPmsFS()
+    ]);
 
-  /* Se não encontrou */
-  if (!patrulha) {
-    mostrarMensagem("Não foi encontrada patrulha vinculada para este RE. Procure o responsável pelo cadastro.");
-    return;
+    /* Procura a patrulha do RE */
+    const patrulha = encontrarPatrulhaDoReEmLista(re, patrulhas);
+
+    /* Se não encontrou */
+    if (!patrulha) {
+      mostrarMensagem("Não foi encontrada patrulha vinculada para este RE. Procure o responsável pelo cadastro.");
+      return;
+    }
+
+    /* Preenche dados */
+    esconderMensagem();
+    conteudo.classList.remove("d-none");
+
+    /* Horário */
+    const hi = patrulha.horarioInicio || "--:--";
+    const hf = patrulha.horarioFim || "--:--";
+    txtHorario.textContent = `das ${hi} às ${hf}`;
+
+    /* Patrulha */
+    txtPatrulha.textContent = `Patrulha ${patrulha.numero || "--"}`;
+
+    /* CPP */
+    txtCpp.textContent = patrulha.cpp || "--";
+
+    /* Missão */
+    txtMissao.textContent = patrulha.missao || "--";
+
+    /* Mapa */
+    aplicarMapa(patrulha.mapa);
+
+    /* Composição */
+    renderizarComposicaoDaPatrulha(patrulha, pms);
+  } catch (err) {
+    console.error(err);
+    mostrarMensagem("Falha ao carregar dados do Firebase. Verifique sua conexão e tente novamente.");
   }
-
-  /* Preenche dados */
-  esconderMensagem();
-  conteudo.classList.remove("d-none");
-
-  /* Horário */
-  const hi = patrulha.horarioInicio || "--:--";
-  const hf = patrulha.horarioFim || "--:--";
-  txtHorario.textContent = `das ${hi} às ${hf}`;
-
-  /* Patrulha */
-  txtPatrulha.textContent = `Patrulha ${patrulha.numero || "--"}`;
-
-  /* CPP */
-  txtCpp.textContent = patrulha.cpp || "--";
-
-  /* Missão */
-  txtMissao.textContent = patrulha.missao || "--";
-
-  /* Mapa */
-  aplicarMapa(patrulha.mapa);
 })();
 
 /* =========================
@@ -175,13 +282,10 @@ function encontrarPatrulhaDoRe(re) {
    ========================= */
 
 /* Voltar */
-btnVoltar.addEventListener("click", () => {
-  window.location.href = "index.html";
-});
-
-/* Sair (limpa a sessão e volta) */
-btnSair.addEventListener("click", () => {
-  sessionStorage.removeItem("opCarnaval_reAtual");
-  window.location.href = "index.html";
-});
-// Commit de verificação geral
+if (btnVoltar) {
+  btnVoltar.addEventListener("click", () => {
+    // se quiser “limpar” o RE da sessão ao voltar:
+    sessionStorage.removeItem("opCarnaval_reAtual");
+    window.location.href = "index.html";
+  });
+}

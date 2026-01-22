@@ -1,27 +1,14 @@
 /* =========================
-   Admin • Cadastro de PM (Criar/Editar)
-   =========================
-   Campos:
-   - RE (6 dígitos, somente números) -> chave do PM
-   - Posto/Graduação (obrigatório)
-   - Nome Completo e/ou Nome de Guerra (ao menos um)
-   - Unidade (select carregado do cadastro de unidades)
-   - Companhia (select carregado conforme unidade)
-
-   Modo:
-   - CADASTRAR: abre sem parâmetro
-   - EDITAR: abre com ?re=XXXXXX
+   Admin • Cadastro de PM (Criar/Editar) • Firestore
    ========================= */
 
-/* =========================
-   Chaves do "banco" (mock)
-   ========================= */
-const CHAVE_UNIDADES = "opCarnaval_unidades";
-const CHAVE_PMS = "opCarnaval_pms";
+import {
+  lerUnidadesFS,
+  lerPmPorReFS,
+  salvarPmFS
+} from "../../js/repositorio-firestore.js";
 
-/* =========================
-   Referências aos elementos
-   ========================= */
+/* Elementos */
 const formCadastroPm = document.getElementById("form-cadastro-pm");
 
 const inputRe = document.getElementById("re");
@@ -35,40 +22,29 @@ const selectCompanhia = document.getElementById("companhia");
 
 const btnCancelar = document.getElementById("btnCancelar");
 
-/* =========================
-   Estado da tela (modo)
-   ========================= */
-
-/* RE vindo da URL indica modo edição */
+/* Estado */
 const params = new URLSearchParams(window.location.search);
-const reEdicao = params.get("re"); // ex.: "100210" (string)
-
-/* Flag: true se estiver editando */
+const reEdicao = params.get("re");
 const MODO_EDICAO = Boolean(reEdicao);
+
+/* Cache local de unidades (para montar companhias e salvar unidadeNome) */
+let unidadesCache = [];
 
 /* =========================
    Utilitários
    ========================= */
-
-/* Normaliza RE (somente números e 6 dígitos) */
 function normalizarRe(valor) {
   return String(valor || "").replace(/\D/g, "").slice(0, 6);
 }
-
-/* Valida RE */
 function reValido(valor) {
   return /^\d{6}$/.test(valor);
 }
-
-/* Regra: ao menos um nome */
 function algumNomeInformado() {
   return (
     inputNomeCompleto.value.trim().length > 0 ||
     inputNomeGuerra.value.trim().length > 0
   );
 }
-
-/* Aplica/Remove erro visual nos nomes */
 function aplicarErroNomes(ativar) {
   if (ativar) {
     inputNomeCompleto.classList.add("is-invalid");
@@ -80,59 +56,8 @@ function aplicarErroNomes(ativar) {
 }
 
 /* =========================
-   Leitura/Escrita (mock)
+   Unidade / Companhia
    ========================= */
-
-function lerUnidades() {
-  const dados = JSON.parse(localStorage.getItem(CHAVE_UNIDADES) || "[]");
-  return Array.isArray(dados) ? dados : [];
-}
-
-function lerPms() {
-  const dados = JSON.parse(localStorage.getItem(CHAVE_PMS) || "[]");
-  return Array.isArray(dados) ? dados : [];
-}
-
-function salvarPms(lista) {
-  localStorage.setItem(CHAVE_PMS, JSON.stringify(lista));
-}
-
-/* Busca PM pelo RE */
-function buscarPmPorRe(re) {
-  return lerPms().find((pm) => String(pm.re) === String(re));
-}
-
-/* Verifica se RE já existe (usado no modo cadastrar) */
-function reJaCadastrado(re) {
-  return lerPms().some((pm) => String(pm.re) === String(re));
-}
-
-/* Atualiza PM existente pelo RE (retorna true se atualizou) */
-function atualizarPmPorRe(re, novosDados) {
-  const lista = lerPms();
-  const idx = lista.findIndex((pm) => String(pm.re) === String(re));
-
-  if (idx === -1) return false;
-
-  /* Mantém o RE como chave e troca o resto */
-  lista[idx] = { ...lista[idx], ...novosDados, re: String(re) };
-
-  salvarPms(lista);
-  return true;
-}
-
-/* Cria PM novo */
-function criarPm(pm) {
-  const lista = lerPms();
-  lista.push(pm);
-  salvarPms(lista);
-}
-
-/* =========================
-   Unidade / Companhia (selects)
-   ========================= */
-
-/* Reseta e bloqueia companhia */
 function bloquearCompanhia() {
   selectCompanhia.disabled = true;
   selectCompanhia.innerHTML =
@@ -140,14 +65,18 @@ function bloquearCompanhia() {
   selectCompanhia.classList.remove("is-invalid");
 }
 
-/* Carrega unidades no select */
-function carregarUnidades() {
-  const unidades = lerUnidades();
-
+async function carregarUnidades() {
   selectUnidade.innerHTML =
     `<option value="" selected disabled>SELECIONE A UNIDADE...</option>`;
 
-  if (unidades.length === 0) {
+  try {
+    unidadesCache = await lerUnidadesFS();
+  } catch (err) {
+    console.error(err);
+    unidadesCache = [];
+  }
+
+  if (unidadesCache.length === 0) {
     const opt = document.createElement("option");
     opt.textContent = "NENHUMA UNIDADE CADASTRADA";
     opt.disabled = true;
@@ -156,7 +85,7 @@ function carregarUnidades() {
     return;
   }
 
-  unidades
+  unidadesCache
     .sort((a, b) => String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR"))
     .forEach((u) => {
       const opt = document.createElement("option");
@@ -168,18 +97,15 @@ function carregarUnidades() {
   bloquearCompanhia();
 }
 
-/* Carrega companhias da unidade selecionada */
 function carregarCompanhias(unidadeId) {
-  const unidade = lerUnidades().find((u) => String(u.id) === String(unidadeId));
+  const unidade = unidadesCache.find((u) => String(u.id) === String(unidadeId));
 
   bloquearCompanhia();
-
   if (!unidade) return;
 
   selectCompanhia.disabled = false;
 
   const cias = Array.isArray(unidade.cias) ? unidade.cias : [];
-
   if (cias.length === 0) {
     const opt = document.createElement("option");
     opt.value = "SEM CIA";
@@ -197,48 +123,43 @@ function carregarCompanhias(unidadeId) {
 }
 
 /* =========================
-   Modo edição: carregar dados
+   Modo edição
    ========================= */
-
-function aplicarModoEdicaoSeNecessario() {
+async function aplicarModoEdicaoSeNecessario() {
   if (!MODO_EDICAO) return;
 
-  /* Normaliza o RE da URL */
   const reNormalizado = normalizarRe(reEdicao);
 
-  /* Se RE inválido, avisa e volta */
   if (!reValido(reNormalizado)) {
     alert("RE inválido na URL para edição.");
     window.location.href = "pms.html";
     return;
   }
 
-  /* Busca PM */
-  const pm = buscarPmPorRe(reNormalizado);
+  let pm = null;
+  try {
+    pm = await lerPmPorReFS(reNormalizado);
+  } catch (err) {
+    console.error(err);
+  }
 
-  /* Se não existir, avisa e volta */
   if (!pm) {
     alert(`Não encontrei PM cadastrado com RE ${reNormalizado}.`);
     window.location.href = "pms.html";
     return;
   }
 
-  /* Preenche campos */
   inputRe.value = String(pm.re || "");
   selectPostoGraduacao.value = String(pm.postoGraduacao || "");
-
   inputNomeCompleto.value = String(pm.nomeCompleto || "");
   inputNomeGuerra.value = String(pm.nomeGuerra || "");
 
-  /* Unidade e companhia exigem ordem: setar unidade -> carregar companhias -> setar companhia */
   selectUnidade.value = String(pm.unidadeId || "");
   carregarCompanhias(selectUnidade.value);
   selectCompanhia.value = String(pm.companhia || "");
 
-  /* Trava o RE para não alterar a chave */
   inputRe.disabled = true;
 
-  /* Ajusta texto do botão "Salvar" (se existir) */
   const btnSalvar = formCadastroPm.querySelector('button[type="submit"]');
   if (btnSalvar) btnSalvar.textContent = "Salvar alterações";
 }
@@ -246,69 +167,51 @@ function aplicarModoEdicaoSeNecessario() {
 /* =========================
    Inicialização
    ========================= */
-(function init() {
-  /* Carrega unidades primeiro (necessário para preencher selects) */
-  carregarUnidades();
-
-  /* Se estiver editando, carrega dados */
-  aplicarModoEdicaoSeNecessario();
+(async function init() {
+  await carregarUnidades();
+  await aplicarModoEdicaoSeNecessario();
 })();
 
 /* =========================
    Eventos
    ========================= */
-
-/* RE: normaliza enquanto digita (somente no modo cadastrar) */
 inputRe.addEventListener("input", () => {
-  /* Se estiver editando, RE está travado e não deve ser alterado */
   if (MODO_EDICAO) return;
-
   inputRe.value = normalizarRe(inputRe.value);
   inputRe.classList.remove("is-invalid");
 });
 
-/* Posto/Graduação */
 selectPostoGraduacao.addEventListener("change", () => {
   selectPostoGraduacao.classList.remove("is-invalid");
 });
 
-/* Nomes */
 [inputNomeCompleto, inputNomeGuerra].forEach((campo) => {
   campo.addEventListener("input", () => {
     if (algumNomeInformado()) aplicarErroNomes(false);
   });
 });
 
-/* Unidade */
 selectUnidade.addEventListener("change", () => {
   selectUnidade.classList.remove("is-invalid");
   carregarCompanhias(selectUnidade.value);
-
-  /* Ao trocar unidade, limpa companhia para evitar seleção inválida */
   selectCompanhia.value = "";
 });
 
-/* Companhia */
 selectCompanhia.addEventListener("change", () => {
   selectCompanhia.classList.remove("is-invalid");
 });
 
-/* Cancelar */
 btnCancelar.addEventListener("click", () => {
-  /* No admin, faz sentido voltar para listagem de PMs */
   window.location.href = "pms.html";
 });
 
-/* Submit (criar ou editar) */
-formCadastroPm.addEventListener("submit", (event) => {
+formCadastroPm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   let ok = true;
 
-  /* Define o RE que será usado (em edição vem do campo travado) */
   const reAtual = MODO_EDICAO ? String(inputRe.value) : normalizarRe(inputRe.value);
 
-  /* Validação RE */
   if (!reValido(reAtual)) {
     inputRe.classList.add("is-invalid");
     ok = false;
@@ -316,7 +219,6 @@ formCadastroPm.addEventListener("submit", (event) => {
     inputRe.classList.remove("is-invalid");
   }
 
-  /* Validação Posto */
   if (!selectPostoGraduacao.value) {
     selectPostoGraduacao.classList.add("is-invalid");
     ok = false;
@@ -324,7 +226,6 @@ formCadastroPm.addEventListener("submit", (event) => {
     selectPostoGraduacao.classList.remove("is-invalid");
   }
 
-  /* Validação Nome */
   if (!algumNomeInformado()) {
     aplicarErroNomes(true);
     ok = false;
@@ -332,7 +233,6 @@ formCadastroPm.addEventListener("submit", (event) => {
     aplicarErroNomes(false);
   }
 
-  /* Validação Unidade */
   if (!selectUnidade.value) {
     selectUnidade.classList.add("is-invalid");
     ok = false;
@@ -340,7 +240,6 @@ formCadastroPm.addEventListener("submit", (event) => {
     selectUnidade.classList.remove("is-invalid");
   }
 
-  /* Validação Companhia */
   if (selectCompanhia.disabled || !selectCompanhia.value) {
     selectCompanhia.classList.add("is-invalid");
     ok = false;
@@ -350,17 +249,24 @@ formCadastroPm.addEventListener("submit", (event) => {
 
   if (!ok) return;
 
-  /* No modo cadastrar, impede duplicidade */
-  if (!MODO_EDICAO && reJaCadastrado(reAtual)) {
-    alert(`JÁ EXISTE UM PM COM O RE ${reAtual}`);
-    inputRe.classList.add("is-invalid");
-    return;
+  /* No modo cadastrar, impede duplicidade consultando Firestore direto */
+  if (!MODO_EDICAO) {
+    try {
+      const existe = await lerPmPorReFS(reAtual);
+      if (existe) {
+        alert(`JÁ EXISTE UM PM COM O RE ${reAtual}`);
+        inputRe.classList.add("is-invalid");
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Falha ao validar duplicidade no Firebase.");
+      return;
+    }
   }
 
-  /* Busca unidade para salvar também o nome */
-  const unidade = lerUnidades().find((u) => String(u.id) === String(selectUnidade.value));
+  const unidade = unidadesCache.find((u) => String(u.id) === String(selectUnidade.value));
 
-  /* Dados a salvar */
   const dadosPm = {
     re: reAtual,
     postoGraduacao: selectPostoGraduacao.value,
@@ -371,45 +277,38 @@ formCadastroPm.addEventListener("submit", (event) => {
     companhia: selectCompanhia.value
   };
 
-  /* Se estiver editando: atualiza; se não: cria */
-  if (MODO_EDICAO) {
-    const okAtualizou = atualizarPmPorRe(reAtual, {
-      ...dadosPm,
-      atualizadoEm: new Date().toISOString()
-    });
+  try {
+    if (MODO_EDICAO) {
+      await salvarPmFS({
+        ...dadosPm,
+        atualizadoEm: new Date().toISOString()
+      });
 
-    if (!okAtualizou) {
-      alert("Falha ao atualizar: PM não encontrado.");
+      alert(`PM ATUALIZADO:\n${dadosPm.postoGraduacao} ${dadosPm.re}`);
+      window.location.href = "pms.html";
       return;
     }
 
-    alert(`PM ATUALIZADO:\n${dadosPm.postoGraduacao} ${dadosPm.re}`);
+    await salvarPmFS({
+      ...dadosPm,
+      criadoEm: new Date().toISOString()
+    });
 
-    /* Volta para listagem após editar */
-    window.location.href = "pms.html";
-    return;
+    alert(`PM CADASTRADO:\n${dadosPm.postoGraduacao} ${dadosPm.re}`);
+
+    inputRe.value = "";
+    selectPostoGraduacao.value = "";
+    inputNomeCompleto.value = "";
+    inputNomeGuerra.value = "";
+    selectUnidade.value = "";
+    bloquearCompanhia();
+
+    inputRe.classList.remove("is-invalid");
+    selectPostoGraduacao.classList.remove("is-invalid");
+    aplicarErroNomes(false);
+    selectUnidade.classList.remove("is-invalid");
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível salvar o PM. Verifique se você está logado como admin.");
   }
-
-  /* Modo cadastrar: cria */
-  criarPm({
-    ...dadosPm,
-    criadoEm: new Date().toISOString()
-  });
-
-  alert(`PM CADASTRADO:\n${dadosPm.postoGraduacao} ${dadosPm.re}`);
-
-  /* Limpa formulário */
-  inputRe.value = "";
-  selectPostoGraduacao.value = "";
-  inputNomeCompleto.value = "";
-  inputNomeGuerra.value = "";
-  selectUnidade.value = "";
-  bloquearCompanhia();
-
-  /* Limpa erros */
-  inputRe.classList.remove("is-invalid");
-  selectPostoGraduacao.classList.remove("is-invalid");
-  aplicarErroNomes(false);
-  selectUnidade.classList.remove("is-invalid");
 });
-// Commit de verificação geral

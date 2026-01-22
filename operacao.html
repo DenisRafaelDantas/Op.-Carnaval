@@ -69,11 +69,23 @@
 
             <!-- Patrulha -->
             <div class="mb-3">
-              <div class="fw-semibold">Patrulha</div>
               <div id="txtPatrulha" class="fs-5">
                 Patrulha --
               </div>
             </div>
+
+            <!-- Composição da Patrulha -->
+            <div class="mt-4">
+              <h5 class="fw-bold">Composição da Patrulha</h5>
+
+              <ul id="listaComposicaoPatrulha" class="list-group mb-2"></ul>
+
+              <p id="msgSemComposicao" class="text-muted d-none">
+                Nenhum policial vinculado a esta patrulha.
+              </p>
+            </div>
+
+
 
             <!-- CPP -->
             <div class="mb-3">
@@ -133,7 +145,7 @@
     crossorigin="anonymous"></script>
 
   <!-- JS da tela -->
-  <script src="js/operacao.js"></script>
+  <script type="module" src="js/operacao.js"></script>
 </body>
 
 </html>

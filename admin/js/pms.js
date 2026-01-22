@@ -1,41 +1,15 @@
 /* =========================
-   Admin • Listagem de PMs
+   Admin • Listagem de PMs (Firestore)
    =========================
-   - Lê do localStorage: opCarnaval_pms
+   - Lê do Firestore: pms
    - Exibe cards com: Editar + Excluir
-   - Editar reutiliza a tela de cadastro:
-     cadastro-pm.html?re=100210
-   - Excluir remove do localStorage e re-renderiza
    ========================= */
 
-/* Chave do "banco" de PMs (mock) */
-const CHAVE_PMS = "opCarnaval_pms";
+import { lerPmsFS, excluirPmPorReFS } from "../../js/repositorio-firestore.js";
 
 /* Elementos da tela */
 const listaPms = document.getElementById("listaPms");
 const semPms = document.getElementById("semPms");
-
-/* =========================
-   Leitura e escrita (mock)
-   ========================= */
-
-/* Lê PMs do localStorage */
-function lerPms() {
-  const dados = JSON.parse(localStorage.getItem(CHAVE_PMS) || "[]");
-  return Array.isArray(dados) ? dados : [];
-}
-
-/* Salva PMs no localStorage */
-function salvarPms(lista) {
-  localStorage.setItem(CHAVE_PMS, JSON.stringify(lista));
-}
-
-/* Exclui PM pelo RE */
-function excluirPmPorRe(re) {
-  const lista = lerPms();
-  const novaLista = lista.filter((pm) => String(pm.re) !== String(re));
-  salvarPms(novaLista);
-}
 
 /* =========================
    Exibição
@@ -56,32 +30,44 @@ function linhaPrincipal(pm) {
   return `${postoExibicao(pm)} ${pm.re || "--"} ${nomeExibicao(pm)}`;
 }
 
-/* Ordena por RE (simples e previsível) */
-function ordenarPorRe(lista) {
-  return [...lista].sort((a, b) => String(a.re || "").localeCompare(String(b.re || ""), "pt-BR"));
+/* (Se existir no seu projeto) Ordenação por antiguidade.
+   Se não existir, cai no sort por posto+nome, sem quebrar.
+*/
+function ordenarSeguro(pms) {
+  try {
+    if (typeof ordenarPmsPorAntiguidade === "function") {
+      return ordenarPmsPorAntiguidade(pms);
+    }
+  } catch (_) {}
+  return [...pms].sort((a, b) => linhaPrincipal(a).localeCompare(linhaPrincipal(b), "pt-BR"));
 }
 
 /* =========================
    Renderização
    ========================= */
-function renderizar() {
-  const pms = ordenarPmsPorAntiguidade(lerPms());
-
-  /* Limpa área */
+async function renderizar() {
   listaPms.innerHTML = "";
+  semPms.classList.add("d-none");
 
-  /* Se vazio, mostra mensagem */
-  if (pms.length === 0) {
+  let pms = [];
+  try {
+    pms = await lerPmsFS();
+  } catch (err) {
+    console.error(err);
+    semPms.classList.remove("d-none");
+    semPms.textContent = "Falha ao carregar PMs do Firebase.";
+    return;
+  }
+
+  const pmsOrdenados = ordenarSeguro(pms);
+
+  if (pmsOrdenados.length === 0) {
     semPms.classList.remove("d-none");
     return;
   }
 
   semPms.classList.add("d-none");
 
-  /* Ordena */
-  const pmsOrdenados = pms;
-
-  /* Renderiza cards */
   pmsOrdenados.forEach((pm) => {
     const card = document.createElement("div");
     card.className = "card mb-3";
@@ -96,13 +82,11 @@ function renderizar() {
         </div>
 
         <div class="d-flex gap-2 mt-3">
-          <!-- Editar -->
           <a class="btn btn-outline-primary btn-sm"
              href="cadastro-pm.html?re=${encodeURIComponent(pm.re || "")}">
             Editar
           </a>
 
-          <!-- Excluir -->
           <button type="button"
                   class="btn btn-outline-danger btn-sm"
                   data-acao="excluir"
@@ -118,36 +102,32 @@ function renderizar() {
 }
 
 /* =========================
-   Eventos (delegação robusta)
+   Eventos
    ========================= */
-
-/* Captura cliques dentro da lista e procura o botão mais próximo com data-acao="excluir" */
-listaPms.addEventListener("click", (event) => {
-  /* Garante que temos um elemento para usar closest() */
+listaPms.addEventListener("click", async (event) => {
   const alvo = event.target;
 
-  /* Procura o botão de excluir mesmo se o clique foi no texto dentro dele */
   const botaoExcluir = (alvo instanceof Element)
     ? alvo.closest('button[data-acao="excluir"]')
     : null;
 
-  /* Se não clicou em excluir, ignora */
   if (!botaoExcluir) return;
 
-  /* Obtém RE do data-re */
   const re = decodeURIComponent(botaoExcluir.getAttribute("data-re") || "");
   if (!re) return;
 
-  /* Confirma */
   const confirmou = confirm(`Confirma excluir o PM de RE ${re}?\nEssa ação não pode ser desfeita.`);
   if (!confirmou) return;
 
-  /* Exclui, re-renderiza e avisa */
-  excluirPmPorRe(re);
-  renderizar();
-  alert(`PM ${re} excluído com sucesso.`);
+  try {
+    await excluirPmPorReFS(re);
+    await renderizar();
+    alert(`PM ${re} excluído com sucesso.`);
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível excluir. Verifique se você está logado como admin.");
+  }
 });
 
 /* Inicializa */
 renderizar();
-// Commit de verificação geral

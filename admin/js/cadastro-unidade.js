@@ -3,22 +3,25 @@
    =========================
    Campos:
    - Nome da unidade
-   - Checkboxes: 1ª CIA ... 6ª CIA (lista de CIAs da unidade)
+   - Checkboxes: 1ª CIA ... 6ª CIA + FT/OP/CAEP
 
    Modo:
    - CADASTRAR: abre sem parâmetro
    - EDITAR: abre com ?id=xxxx
    ========================= */
 
-/* Chave do "banco" (mock) */
-const CHAVE_UNIDADES = "opCarnaval_unidades";
+import {
+  lerUnidadesFS,
+  lerUnidadePorIdFS,
+  salvarUnidadeFS
+} from "../../js/repositorio-firestore.js";
 
 /* Elementos */
 const formUnidade = document.getElementById("form-unidade");
 const inputNomeUnidade = document.getElementById("nomeUnidade");
 const btnCancelarUnidade = document.getElementById("btnCancelarUnidade");
 
-/* Mensagem opcional (mantida, mas não obrigatória) */
+/* Mensagem opcional */
 const erroCias = document.getElementById("erroCias");
 
 /* Checkboxes de CIA */
@@ -31,7 +34,8 @@ const checksCia = [
   document.getElementById("cia6"),
   document.getElementById("ciaft"),
   document.getElementById("ciaop"),
-  document.getElementById("caep")
+  document.getElementById("caep"),
+  document.getElementById("em")
 ];
 
 /* =========================
@@ -39,77 +43,61 @@ const checksCia = [
    ========================= */
 const params = new URLSearchParams(window.location.search);
 const idEdicao = params.get("id");      // ex.: "4bpmm"
-const MODO_EDICAO = Boolean(idEdicao);  // true se tem id
+const MODO_EDICAO = Boolean(idEdicao);
 
 /* =========================
-   Funções utilitárias
+   Utilitários
    ========================= */
-
-/* Lê unidades do localStorage */
-function lerUnidades() {
-  const unidades = JSON.parse(localStorage.getItem(CHAVE_UNIDADES) || "[]");
-  return Array.isArray(unidades) ? unidades : [];
-}
-
-/* Salva unidades no localStorage */
-function salvarUnidades(unidades) {
-  localStorage.setItem(CHAVE_UNIDADES, JSON.stringify(unidades));
-}
 
 /* Obtém CIAs marcadas */
 function obterCiasMarcadas() {
-  return checksCia.filter((c) => c.checked).map((c) => c.value);
+  return checksCia.filter((c) => c && c.checked).map((c) => c.value);
 }
 
 /* Marca checks conforme array de CIAs */
 function marcarCias(cias) {
   const setCias = new Set((Array.isArray(cias) ? cias : []).map(String));
   checksCia.forEach((c) => {
+    if (!c) return;
     c.checked = setCias.has(String(c.value));
   });
 }
 
-/* Busca unidade por id */
-function buscarUnidadePorId(id) {
-  return lerUnidades().find((u) => String(u.id) === String(id));
+/* Gera ID a partir do nome (mantendo seu padrão) */
+function gerarIdPeloNome(nome) {
+  return String(nome || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-/* Verifica duplicidade de nome (ignorando a própria unidade em edição) */
-function nomeUnidadeJaExiste(nome, idParaIgnorar = null) {
+/* Verifica duplicidade de nome no Firestore (ignorando a própria unidade em edição) */
+async function nomeUnidadeJaExisteFS(nome, idParaIgnorar = null) {
   const alvo = String(nome || "").trim().toLowerCase();
-  return lerUnidades().some((u) => {
+  const unidades = await lerUnidadesFS();
+
+  return unidades.some((u) => {
     const mesmoNome = String(u.nome || "").trim().toLowerCase() === alvo;
     const naoEhAMesma = idParaIgnorar ? String(u.id) !== String(idParaIgnorar) : true;
     return mesmoNome && naoEhAMesma;
   });
 }
 
-/* Atualiza unidade por id (retorna true se atualizou) */
-function atualizarUnidadePorId(id, novosDados) {
-  const lista = lerUnidades();
-  const idx = lista.findIndex((u) => String(u.id) === String(id));
-
-  if (idx === -1) return false;
-
-  lista[idx] = { ...lista[idx], ...novosDados, id: String(id) };
-  salvarUnidades(lista);
-  return true;
-}
-
-/* Cria unidade nova (id já vem do seu cadastro) */
-function criarUnidade(unidade) {
-  const lista = lerUnidades();
-  lista.push(unidade);
-  salvarUnidades(lista);
-}
-
 /* =========================
    Modo edição: carregar dados
    ========================= */
-function aplicarModoEdicaoSeNecessario() {
+async function aplicarModoEdicaoSeNecessario() {
   if (!MODO_EDICAO) return;
 
-  const unidade = buscarUnidadePorId(idEdicao);
+  let unidade = null;
+  try {
+    unidade = await lerUnidadePorIdFS(idEdicao);
+  } catch (err) {
+    console.error(err);
+  }
 
   if (!unidade) {
     alert("Unidade não encontrada para edição.");
@@ -124,18 +112,13 @@ function aplicarModoEdicaoSeNecessario() {
   /* Ajusta texto do botão submit */
   const btnSalvar = formUnidade.querySelector('button[type="submit"]');
   if (btnSalvar) btnSalvar.textContent = "Salvar alterações";
-
-  /* Em edição, recomendo travar o nome? (você decide)
-     Vou deixar editável, mas se quiser travar, descomente:
-     inputNomeUnidade.disabled = true;
-  */
 }
 
 /* =========================
    Inicialização
    ========================= */
-(function init() {
-  aplicarModoEdicaoSeNecessario();
+(async function init() {
+  await aplicarModoEdicaoSeNecessario();
 })();
 
 /* =========================
@@ -148,7 +131,7 @@ btnCancelarUnidade.addEventListener("click", () => {
 });
 
 /* Submit (criar/editar) */
-formUnidade.addEventListener("submit", (event) => {
+formUnidade.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const nome = inputNomeUnidade.value.trim();
@@ -176,54 +159,55 @@ formUnidade.addEventListener("submit", (event) => {
 
   if (!ok) return;
 
-  /* Evita duplicidade de nome */
-  if (nomeUnidadeJaExiste(nome, MODO_EDICAO ? idEdicao : null)) {
-    alert("Já existe uma unidade cadastrada com este nome.");
+  /* Evita duplicidade de nome (Firestore) */
+  try {
+    const jaExiste = await nomeUnidadeJaExisteFS(nome, MODO_EDICAO ? idEdicao : null);
+    if (jaExiste) {
+      alert("Já existe uma unidade cadastrada com este nome.");
+      return;
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Falha ao validar duplicidade no Firebase.");
     return;
   }
 
-  /* Se editar */
-  if (MODO_EDICAO) {
-    const atualizou = atualizarUnidadePorId(idEdicao, {
-      nome: nome,
-      cias: cias,
-      atualizadoEm: new Date().toISOString()
-    });
+  try {
+    /* EDITAR */
+    if (MODO_EDICAO) {
+      await salvarUnidadeFS({
+        id: idEdicao,
+        nome: nome,
+        cias: cias,
+        atualizadoEm: new Date().toISOString()
+      });
 
-    if (!atualizou) {
-      alert("Falha ao atualizar (unidade não encontrada).");
+      alert("Unidade atualizada com sucesso.");
+      window.location.href = "unidades.html";
       return;
     }
 
-    alert("Unidade atualizada com sucesso.");
-    window.location.href = "unidades.html";
-    return;
+    /* CADASTRAR */
+    const id = gerarIdPeloNome(nome);
+
+    const unidade = {
+      id: id,
+      nome: nome,
+      cias: cias,
+      criadoEm: new Date().toISOString()
+    };
+
+    await salvarUnidadeFS(unidade);
+
+    alert("Unidade cadastrada com sucesso.");
+
+    /* Limpa */
+    inputNomeUnidade.value = "";
+    checksCia.forEach((c) => {
+      if (c) c.checked = false;
+    });
+  } catch (err) {
+    console.error(err);
+    alert("Não foi possível salvar a unidade. Verifique se você está logado como admin.");
   }
-
-  /* Se cadastrar: mantém o seu padrão de id (derivado do nome) */
-  const id = nome
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-  /* Monta unidade */
-  const unidade = {
-    id: id,
-    nome: nome,
-    cias: cias,
-    criadoEm: new Date().toISOString()
-  };
-
-  /* Salva */
-  criarUnidade(unidade);
-
-  alert("Unidade cadastrada com sucesso.");
-
-  /* Limpa */
-  inputNomeUnidade.value = "";
-  checksCia.forEach((c) => (c.checked = false));
 });
-// Commit de verificação geral
