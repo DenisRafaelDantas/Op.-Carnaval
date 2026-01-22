@@ -106,3 +106,28 @@ body {
   top: -70px;                /* ajuste fino: 40~70px costuma resolver */
 }
 
+/* =========================
+   Vincular PM • Listas roláveis
+   ========================= */
+
+/* Área rolável que não estoura a tela */
+.lista-rolavel {
+  /* altura máxima baseada na tela (evita ultrapassar) */
+  max-height: calc(100vh - 420px);
+  overflow-y: auto;
+  padding-right: 0.25rem; /* respiro para a barra de rolagem */
+}
+
+/* No celular, sobe um pouco o espaço para as listas */
+@media (max-width: 576px) {
+  .lista-rolavel {
+    max-height: calc(100vh - 520px);
+  }
+}
+
+/* Iframe da prévia do mapa (você já tem algo parecido; se não, fica aqui) */
+.mapa-preview {
+  width: 100%;
+  height: 320px;
+  border: 0;
+}

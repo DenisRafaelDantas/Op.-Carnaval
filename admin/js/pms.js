@@ -65,7 +65,7 @@ function ordenarPorRe(lista) {
    Renderização
    ========================= */
 function renderizar() {
-  const pms = lerPms();
+  const pms = ordenarPmsPorAntiguidade(lerPms());
 
   /* Limpa área */
   listaPms.innerHTML = "";
@@ -79,7 +79,7 @@ function renderizar() {
   semPms.classList.add("d-none");
 
   /* Ordena */
-  const pmsOrdenados = ordenarPorRe(pms);
+  const pmsOrdenados = pms;
 
   /* Renderiza cards */
   pmsOrdenados.forEach((pm) => {
