@@ -51,7 +51,7 @@ inputRe.addEventListener("paste", (event) => {
     btnEntrar.disabled = !reValido(inputRe.value);
 });
 
-/* Evento: submit do formulário (por enquanto, só valida e impede navegação) */
+/* Evento: submit do formulário */
 formRe.addEventListener("submit", (event) => {
     /* Impede envio real (sem backend por enquanto) */
     event.preventDefault();
@@ -63,6 +63,13 @@ formRe.addEventListener("submit", (event) => {
         return;
     }
 
-    /* Se válido, por enquanto só demonstra o fluxo (depois ligamos no banco) */
-    alert(`RE confirmado: ${inputRe.value}\n(Em seguida vamos buscar os dados da operação.)`);
+    /* RE válido (normaliza para garantir somente números) */
+    const re = String(inputRe.value).replace(/\D/g, "").slice(0, 6);
+
+    /* Salva o RE na sessão (ajuda caso o PM dê refresh na página) */
+    sessionStorage.setItem("opCarnaval_reAtual", re);
+
+    /* Redireciona para a tela final do operacional */
+    window.location.href = `operacao.html?re=${encodeURIComponent(re)}`;
 });
+
