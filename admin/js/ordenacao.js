@@ -55,3 +55,4 @@ function ordenarPmsPorAntiguidade(lista) {
     return String(a.re || "").localeCompare(String(b.re || ""), "pt-BR");
   });
 }
+// Commit de verificação geral

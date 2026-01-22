@@ -384,3 +384,4 @@ if (btnLimparMapa) {
 
 /* Atualiza prévia ao abrir a tela (importante no modo EDITAR) */
 atualizarPreviaMapa();
+// Commit de verificação geral

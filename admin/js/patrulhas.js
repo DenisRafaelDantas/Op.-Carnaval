@@ -150,3 +150,4 @@ listaPatrulhas.addEventListener("click", (event) => {
 
 /* Inicializa renderização ao abrir a página */
 renderizar();
+// Commit de verificação geral

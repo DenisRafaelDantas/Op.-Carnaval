@@ -184,3 +184,4 @@ btnSair.addEventListener("click", () => {
   sessionStorage.removeItem("opCarnaval_reAtual");
   window.location.href = "index.html";
 });
+// Commit de verificação geral

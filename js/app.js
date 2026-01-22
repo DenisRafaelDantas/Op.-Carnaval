@@ -72,4 +72,5 @@ formRe.addEventListener("submit", (event) => {
     /* Redireciona para a tela final do operacional */
     window.location.href = `operacao.html?re=${encodeURIComponent(re)}`;
 });
+// Commit de verificação geral
 

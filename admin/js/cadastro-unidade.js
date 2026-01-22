@@ -226,3 +226,4 @@ formUnidade.addEventListener("submit", (event) => {
   inputNomeUnidade.value = "";
   checksCia.forEach((c) => (c.checked = false));
 });
+// Commit de verificação geral

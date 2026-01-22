@@ -510,3 +510,4 @@ btnSair.addEventListener("click", sair);
 /* Ações da composição */
 btnRemoverSelecionados.addEventListener("click", removerSelecionadosDaComposicao);
 btnLimparComposicao.addEventListener("click", limparComposicao);
+// Commit de verificação geral
