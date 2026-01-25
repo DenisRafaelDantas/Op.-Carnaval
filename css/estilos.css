@@ -17,21 +17,15 @@ body {
    ========================= */
 
 /* Classe base para padronizar comportamento das imagens */
+/* Classe base para padronizar comportamento das imagens */
 .brasao {
-    display: inline;
-    justify-content: space-between;
-    /* garante quebra de linha e centralização */
-    margin-left: auto;
-    /* centraliza horizontalmente */
-    margin-right: auto;
-    /* centraliza horizontalmente */
-    height: auto;
-    /* mantém proporção */
-    width: 100%;
-    /* permite adaptar ao tamanho da tela */
-    object-fit: contain;
-    /* evita distorção */
+  display: block;
+  height: auto;
+  width: auto;          
+  max-width: 100%;      /* garante que não estoura o container */
+  object-fit: contain;
 }
+
 
 /* Brasão superior (PMESP) */
 .brasao-pmesp {
@@ -116,10 +110,7 @@ body {
 }
 
 @media (min-width: 768px) {
-  .lista-rolavel {
-    /* ajusta para telas maiores */
-    max-height: calc(100vh - 400px);
-  }
+
   .brasao-4bpmm {
     max-height: 100px;
   }
