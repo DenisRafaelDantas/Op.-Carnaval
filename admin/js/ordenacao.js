@@ -12,10 +12,12 @@ const ORDEM_POSTO_ANTIGUIDADE = [
   "1º TEN PM",
   "2º TEN PM",
   "ASP OF PM",
+  "AL OF PM",
   "SUBTEN PM",
   "1º SGT PM",
   "2º SGT PM",
   "3º SGT PM",
+  "AL SGT PM",
   "CB PM",
   "SD PM",
   "SD PM 2ª CL"

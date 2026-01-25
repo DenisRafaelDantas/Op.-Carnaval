@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Admin • Importar PMs - Operação Carnaval</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+  />
+
+  <link rel="stylesheet" href="../css/estilos.css" />
+</head>
+
+<body>
+  <main class="container py-4">
+    <div class="mx-auto conteudo-largura">
+
+      <header class="cabecalho-interno">
+        <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP" />
+        <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M" />
+      </header>
+
+      <section class="card shadow-sm">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h1 class="h5 mb-1">Atualizar PMs via planilha</h1>
+              <p class="text-body-secondary mb-0">
+                Envie a planilha de efetivo e atualize a coleção <code>pms</code>.
+              </p>
+            </div>
+
+            <a class="btn btn-secondary" href="pms.html">
+              Voltar
+            </a>
+          </div>
+
+          <div class="mb-3">
+            <label for="arquivoExcel" class="form-label">
+              Arquivo Excel (.xlsx)
+            </label>
+            <input
+              type="file"
+              class="form-control"
+              id="arquivoExcel"
+              accept=".xlsx,.xls"
+
+            />
+            <div class="form-text">
+              Use a planilha de efetivo (aba <strong>Geral</strong>), com o cabeçalho na linha 4.
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mb-3">
+            <button id="btnIniciarImportacao" class="btn btn-primary" disabled>
+              Iniciar cadastros
+            </button>
+
+            <button id="btnPararImportacao" class="btn btn-outline-danger" disabled>
+              Parar processo
+            </button>
+          </div>
+
+          <div class="mb-2">
+            <span class="fw-semibold">Atualizações:</span>
+          </div>
+
+          <!-- Lista de atualizações (parecida com a tela de vínculo de patrulha) -->
+          <div id="listaAtualizacoes" class="list-group small mb-2"></div>
+
+          <div id="resumoImportacao" class="text-body-secondary small"></div>
+
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+
+  <!-- Biblioteca para ler Excel no navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Lógica da importação -->
+  <script type="module" src="js/pms-importar-planilha.js"></script>
+  <script type="module" src="../js/guard-admin.js"></script>
+
+</body>
+</html>

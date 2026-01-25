@@ -34,7 +34,7 @@ const checksCia = [
   document.getElementById("cia6"),
   document.getElementById("ciaft"),
   document.getElementById("ciaop"),
-  document.getElementById("caep"),
+  document.getElementById("aep"),
   document.getElementById("em")
 ];
 
@@ -63,7 +63,7 @@ function marcarCias(cias) {
   });
 }
 
-/* Gera ID a partir do nome (mantendo seu padrão) */
+/* Gera ID a partir do nome */
 function gerarIdPeloNome(nome) {
   return String(nome || "")
     .trim()
@@ -147,14 +147,7 @@ formUnidade.addEventListener("submit", async (event) => {
     inputNomeUnidade.classList.remove("is-invalid");
   }
 
-  /* Se quiser exigir ao menos uma CIA, ative aqui:
-  if (cias.length === 0) {
-    erroCias.classList.remove("d-none");
-    ok = false;
-  } else {
-    erroCias.classList.add("d-none");
-  }
-  */
+
   if (erroCias) erroCias.classList.add("d-none");
 
   if (!ok) return;
