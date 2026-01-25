@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="pt-br">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -12,17 +13,19 @@
   <link rel="stylesheet" href="/css/estilos.css">
 </head>
 
-<body >
+<body>
 
-  <div class="container py-4" style="max-width: 520px;">
-    <!-- Header padrão -->
-    <div class="mb-3">
-      <h3 class="fw-bold mb-0">Op. Carnaval</h3>
-      <div class="text-muted">Acesso do Administrador</div>
-    </div>
+  <div class="container py-4 conteudo-largura">
+
+    <!-- Cabeçalho interno com brasões nos cantos -->
+      <header class="cabecalho-interno">
+        <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP">
+        <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M">
+      </header>
 
     <!-- Card padrão -->
     <div class="card shadow-sm">
+      <h1 class="h5 text-center mt-3 ">Acesso Operação Carnaval</h1>
       <div class="card-body p-4">
 
         <!-- Mensagem de erro -->
@@ -31,27 +34,14 @@
         <form id="formLogin" novalidate>
           <div class="mb-3">
             <label class="form-label">RE</label>
-            <input
-              id="re"
-              type="text"
-              class="form-control"
-              inputmode="numeric"
-              autocomplete="username"
-              placeholder="Digite seu RE (6 dígitos)"
-              required
-            >
+            <input id="re" type="text" class="form-control" inputmode="numeric" autocomplete="username"
+              placeholder="Digite seu RE (6 dígitos)" required>
           </div>
 
           <div class="mb-3">
             <label class="form-label">Senha</label>
-            <input
-              id="senha"
-              type="password"
-              class="form-control"
-              autocomplete="current-password"
-              placeholder="Digite sua senha"
-              required
-            >
+            <input id="senha" type="password" class="form-control" autocomplete="current-password"
+              placeholder="Digite sua senha" required>
           </div>
 
           <button id="btnEntrar" class="btn btn-primary w-100" type="submit">
@@ -59,11 +49,6 @@
           </button>
         </form>
 
-        <hr class="my-4">
-
-        <div class="text-muted small">
-          A tela <b>Operação</b> não exige login (somente leitura).
-        </div>
       </div>
     </div>
   </div>
@@ -71,4 +56,5 @@
   <!-- IMPORTANTE: script no final e como module -->
   <script type="module" src="../js/login-admin.js"></script>
 </body>
+
 </html>

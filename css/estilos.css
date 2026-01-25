@@ -4,7 +4,6 @@
 
 body {
     background: #474747;
-    /* cinza claro suave */
 }
 
 /* Controla a largura máxima do conteúdo central para não “esticar” demais no desktop */
@@ -36,7 +35,7 @@ body {
 
 /* Brasão superior (PMESP) */
 .brasao-pmesp {
-    max-width: 180px;
+    max-width: 150px;
     /* tamanho “ideal” no desktop */
     margin-top: 0%;
     /* respiro no topo */
@@ -74,19 +73,17 @@ body {
 .cabecalho-interno .brasao {
     width: auto;
     max-height: 70px;
-    /* tamanho reduzido e elegante */
     margin: 0;
-    /* remove margens antigas */
 }
 
-/* Ajuste fino individual (opcional) */
-.cabecalho-interno .brasao-pmesp {
+/* Ajuste fino individual */
+ .cabecalho-interno .brasao-pmesp {
     max-height: 60px;
 }
 
 .cabecalho-interno .brasao-4bpmm {
     max-height: 80px;
-}
+} 
 
 /* =========================
    Prévia do mapa (My Maps)
@@ -113,14 +110,9 @@ body {
 /* Área rolável que não estoura a tela */
 .lista-rolavel {
   /* altura máxima baseada na tela (evita ultrapassar) */
-  max-height: calc(100vh - 420px);
+  max-height: calc(100vh - 320px);
   overflow-y: auto;
   padding-right: 0.25rem; /* respiro para a barra de rolagem */
 }
 
-/* No celular, sobe um pouco o espaço para as listas */
-@media (max-width: 576px) {
-  .lista-rolavel {
-    max-height: calc(100vh - 520px);
-  }
-}
+
