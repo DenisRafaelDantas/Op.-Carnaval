@@ -21,7 +21,7 @@ body {
 .brasao {
   display: block;
   height: auto;
-  width: auto;          
+  width: auto;          /* <-- importante: não força 100% */
   max-width: 100%;      /* garante que não estoura o container */
   object-fit: contain;
 }
