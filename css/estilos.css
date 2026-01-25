@@ -29,7 +29,7 @@ body {
 
 /* Brasão superior (PMESP) */
 .brasao-pmesp {
-    max-width: 150px;
+    max-width: 140px;
     /* tamanho “ideal” no desktop */
     margin-top: 0%;
     /* respiro no topo */
@@ -39,7 +39,7 @@ body {
 
 /* Brasão inferior (4º BPM/M) */
 .brasao-4bpmm {
-    max-width: 150px;
+    max-width: 140px;
     /* tamanho “ideal” no desktop */
     margin-bottom: 10px;
     /* espaço antes do card */
