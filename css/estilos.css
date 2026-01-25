@@ -115,4 +115,13 @@ body {
   padding-right: 0.25rem; /* respiro para a barra de rolagem */
 }
 
+/* Responsivo para celular */
+@media (max-width: 576px) {
+  .cabecalho-index {
+    padding: 1rem;
+  }
 
+  .brasao-index {
+    height: 90px; 
+  }
+}
