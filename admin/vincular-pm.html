@@ -43,13 +43,28 @@
             <div>
               <h1 class="h5 mb-1">Vincular PM à Patrulha</h1>
               <p class="text-body-secondary mb-0">
-                Defina horário e selecione os policiais que compõem a patrulha.
+                Defina a data, horário e selecione os policiais que compõem a patrulha.
               </p>
             </div>
 
             <!-- Identificação da patrulha (preenchida via JS) -->
             <div class="text-end">
               <div class="badge text-bg-secondary" id="badgePatrulha">Patrulha --</div>
+            </div>
+          </div>
+
+          <!-- ✅ Data da escala -->
+          <div class="row g-3 mb-3">
+            <div class="col-12 col-sm-6">
+              <label for="dataEscala" class="form-label">Data</label>
+              <input type="date" class="form-control" id="dataEscala" name="dataEscala" required />
+              <div class="invalid-feedback">Selecione a data.</div>
+            </div>
+
+            <div class="col-12 col-sm-6 d-flex align-items-end">
+              <div class="text-body-secondary small">
+                Ao trocar a data, os horários e a composição serão carregados automaticamente.
+              </div>
             </div>
           </div>
 
@@ -68,68 +83,51 @@
             </div>
           </div>
 
-          <!-- Layout responsivo:
-               - Mobile: composição primeiro, depois pesquisa/lista
-               - Desktop: composição na direita e lista na esquerda -->
+          <!-- Layout responsivo -->
           <div class="row g-3">
 
-            <!-- COMPOSIÇÃO (no mobile fica em cima; no desktop fica à direita) -->
+            <!-- COMPOSIÇÃO -->
             <div class="col-12 col-lg-5 order-1 order-lg-2">
               <div class="border rounded p-3 bg-dark-subtle overflow-hidden">
 
-                <!-- Cabeçalho da composição -->
                 <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
                   <strong class="me-auto">Composição da Patrulha</strong>
 
-                  <!-- Remove selecionados da composição -->
                   <button type="button" class="btn btn-outline-danger btn-sm text-wrap ms-auto w-100 w-sm-auto"
                     id="btnRemoverSelecionados">
                     Remover selecionados
                   </button>
                 </div>
 
-                <!-- Lista da composição (rolável) -->
-                <div class="lista-rolavel" id="listaComposicao">
-                  <!-- Itens inseridos via JS -->
-                </div>
+                <div class="lista-rolavel" id="listaComposicao"></div>
 
-                <!-- Mensagem quando vazio -->
                 <div class="text-body-secondary small mt-2" id="msgComposicaoVazia">
                   Nenhum PM adicionado ainda.
                 </div>
               </div>
             </div>
 
-
-            <!-- PESQUISA + LISTA (no mobile fica embaixo; no desktop fica à esquerda) -->
+            <!-- PESQUISA + LISTA -->
             <div class="col-12 col-lg-7 order-2 order-lg-1">
               <div class="border rounded p-3">
 
-                <!-- Pesquisa por RE -->
                 <label for="filtroRe" class="form-label">Pesquisar por RE (sem dígito)</label>
 
                 <div class="input-group mb-3">
-                  <!-- Campo de RE -->
                   <input type="text" class="form-control" id="filtroRe" inputmode="numeric" maxlength="6"
                     placeholder="Digite 6 dígitos..." aria-label="Pesquisar por RE" />
 
-                  <!-- Botão limpar filtro -->
                   <button class="btn btn-outline-secondary" type="button" id="btnLimparFiltro">
                     Limpar
                   </button>
                 </div>
 
-                <!-- Aviso pequeno -->
                 <div class="text-body-secondary small mb-2" id="statusLista">
                   Mostrando todos os PMs cadastrados.
                 </div>
 
-                <!-- Lista de PMs (rolável) -->
-                <div class="lista-rolavel" id="listaPms">
-                  <!-- Itens inseridos via JS -->
-                </div>
+                <div class="lista-rolavel" id="listaPms"></div>
 
-                <!-- Mensagem quando não houver PM -->
                 <div class="text-body-secondary small mt-2 d-none" id="msgSemPms">
                   Nenhum PM cadastrado ainda.
                 </div>
@@ -141,23 +139,19 @@
 
           <!-- Botões inferiores -->
           <div class="d-flex gap-2 mt-4">
-            <!-- Adicionar selecionados -->
             <button type="button" class="btn btn-primary btn-lg flex-grow-1" id="btnAdicionar">
               Adicionar
             </button>
 
-            <!-- Cancelar (limpa seleção e filtro) -->
             <button type="button" class="btn btn-secondary btn-lg" id="btnCancelar">
               Cancelar
             </button>
 
-            <!-- Sair (volta para listagem de patrulhas) -->
             <button type="button" class="btn btn-outline-secondary btn-lg" id="btnSair">
               Sair
             </button>
           </div>
 
-          <!-- Rodapé -->
           <p class="text-center text-body-secondary small mt-3 mb-0">
             PMESP • Vincular PM à Patrulha
           </p>
@@ -176,10 +170,8 @@
   <script src="js/ordenacao.js"></script>
   <script type="module" src="js/vincular-pm.js"></script>
 
-  <!-- Uppercase global (não afeta RE por ser numérico) -->
   <script src="js/uppercase.js"></script>
   <script type="module" src="../js/guard-admin.js"></script>
 </body>
 
 </html>
-<!-- Commit de verificação geral -->

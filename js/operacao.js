@@ -1,9 +1,10 @@
 /* =========================
-   Operação • Tela do Policial (Firestore)
+   Operação • Tela do Policial (Firestore) • POR DATA
    =========================
-   - Recebe o RE pela URL (?re=123456) OU pelo sessionStorage
-   - Busca patrulhas no Firestore e encontra qual contém esse RE em composicaoRe
-   - Exibe: horário, patrulha, composição, CPP, missão e mapa
+   - Recebe RE pela URL (?re=123456) ou sessionStorage
+   - Recebe DATA pela URL (?data=YYYY-MM-DD)
+   - Encontra patrulha onde escalasPorData[data].composicaoRe contém o RE
+   - Exibe: horário (da data), patrulha, composição (da data), CPP, missão e mapa
    ========================= */
 
 import { lerPatrulhasFS, lerPmsFS } from "./repositorio-firestore.js";
@@ -27,42 +28,32 @@ const msgSemComposicao = document.getElementById("msgSemComposicao");
 
 const btnVoltar = document.getElementById("btnVoltar");
 
-/* =========================
-   Utilitários
-   ========================= */
-
-/* Normaliza RE: apenas números, 6 dígitos */
+/* Utilitários */
 function normalizarRe(valor) {
   return String(valor || "").replace(/\D/g, "").slice(0, 6);
 }
 
-/* Mostra mensagem na tela */
 function mostrarMensagem(texto) {
   mensagem.textContent = texto;
   mensagem.classList.remove("d-none");
 }
 
-/* Esconde mensagem */
 function esconderMensagem() {
   mensagem.classList.add("d-none");
 }
 
-/* Extrai src de um iframe (caso tenham colado iframe no cadastro) */
 function extrairSrcIframe(texto) {
   const match = String(texto || "").match(/src\s*=\s*["']([^"']+)["']/i);
   return match ? match[1] : "";
 }
 
-/* Remove aspas externas caso o usuário tenha colado "https://..." */
 function removerAspasExternas(texto) {
   return String(texto || "").trim().replace(/^["']|["']$/g, "").trim();
 }
 
-/* Define o mapa no iframe (aceita link embed ou iframe colado) */
 function aplicarMapa(valorMapa) {
   const bruto = removerAspasExternas(valorMapa);
 
-  /* Se vazio: esconde iframe e mostra mensagem */
   if (!bruto) {
     mapaIframe.src = "";
     mapaIframe.classList.add("d-none");
@@ -70,13 +61,11 @@ function aplicarMapa(valorMapa) {
     return;
   }
 
-  /* Se for iframe colado, extrai o src */
   let srcFinal = bruto;
   if (bruto.toLowerCase().includes("<iframe")) {
     srcFinal = extrairSrcIframe(bruto);
   }
 
-  /* Se ainda não tem src válido */
   if (!srcFinal) {
     mapaIframe.src = "";
     mapaIframe.classList.add("d-none");
@@ -84,16 +73,12 @@ function aplicarMapa(valorMapa) {
     return;
   }
 
-  /* Aplica src e mostra */
   mapaIframe.src = srcFinal;
   mapaIframe.classList.remove("d-none");
   mapaVazio.classList.add("d-none");
 }
 
-/* =========================
-   Ordenação por antiguidade (pra composição ficar bonita)
-   ========================= */
-
+/* Ordenação por antiguidade (composição bonita) */
 function normalizarPosto(texto) {
   return String(texto || "")
     .toUpperCase()
@@ -122,13 +107,10 @@ const PESO_POSTO = new Map([
 
 function pesoPostoTexto(postoGraduacao) {
   const p = normalizarPosto(postoGraduacao);
-
   if (PESO_POSTO.has(p)) return PESO_POSTO.get(p);
-
   for (const [chave, peso] of PESO_POSTO.entries()) {
     if (p.startsWith(chave)) return peso;
   }
-
   return -1;
 }
 
@@ -148,34 +130,22 @@ function ordenarComposicaoPorAntiguidade(itens) {
   });
 }
 
-/* =========================
-   Firestore helpers
-   ========================= */
-
-/* Procura a patrulha do PM pelo RE (varrendo patrulhas) */
-function encontrarPatrulhaDoReEmLista(re, patrulhas) {
-  return patrulhas.find((p) => {
-    const comp = Array.isArray(p.composicaoRe) ? p.composicaoRe : [];
-    return comp.map(String).includes(String(re));
-  });
-}
-
 function nomePreferido(pm) {
   return pm?.nomeGuerra?.trim() || pm?.nomeCompleto?.trim() || "(Sem nome)";
 }
-
 function postoPreferido(pm) {
   return pm?.postoGraduacao?.trim() || "--";
 }
 
-/* Renderiza composição da patrulha */
-function renderizarComposicaoDaPatrulha(patrulha, pms) {
+/* Renderiza composição DA DATA */
+function renderizarComposicaoDaData(patrulha, dataISO, pms) {
   if (!listaComposicaoPatrulha || !msgSemComposicao) return;
 
   listaComposicaoPatrulha.innerHTML = "";
   msgSemComposicao.classList.add("d-none");
 
-  const composicao = Array.isArray(patrulha?.composicaoRe) ? patrulha.composicaoRe : [];
+  const escala = patrulha?.escalasPorData?.[dataISO];
+  const composicao = Array.isArray(escala?.composicaoRe) ? escala.composicaoRe : [];
 
   if (composicao.length === 0) {
     msgSemComposicao.classList.remove("d-none");
@@ -184,7 +154,6 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
 
   const mapPms = new Map((Array.isArray(pms) ? pms : []).map((pm) => [String(pm.re), pm]));
 
-  // monta itens com dados (e ordena)
   const itens = composicao.map((re) => {
     const pm = mapPms.get(String(re));
     return {
@@ -209,83 +178,80 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
   });
 }
 
-/* =========================
-   Inicialização
-   ========================= */
+/* Encontra patrulha do RE NA DATA */
+function encontrarPatrulhaDoReNaData(re, dataISO, patrulhas) {
+  const reStr = String(re);
+
+  return (Array.isArray(patrulhas) ? patrulhas : []).find((p) => {
+    const escala = p?.escalasPorData?.[dataISO];
+    const comp = Array.isArray(escala?.composicaoRe) ? escala.composicaoRe : [];
+    return comp.map(String).includes(reStr);
+  });
+}
+
+/* Inicialização */
 (async function init() {
-  /* 1) Obtém RE pela URL (preferência) */
   const params = new URLSearchParams(window.location.search);
   const reUrl = normalizarRe(params.get("re"));
-
-  /* 2) Se não vier pela URL, tenta pegar do sessionStorage */
   const reSessao = normalizarRe(sessionStorage.getItem("opCarnaval_reAtual"));
-
-  /* 3) Decide o RE final */
   const re = reUrl || reSessao;
 
-  /* Mostra no badge */
+  const dataISO = String(params.get("data") || "").trim(); // ✅ obrigatório no novo fluxo
+
   badgeRe.textContent = re ? `RE ${re}` : "RE --";
 
-  /* Se não tem RE, orienta voltar */
   if (!re) {
     mostrarMensagem("RE não informado. Volte para a tela inicial e digite seu RE.");
     return;
   }
 
+  if (!dataISO) {
+    mostrarMensagem("Data não informada. Volte e selecione a data da sua escala.");
+    return;
+  }
+
   try {
-    // Carrega patrulhas e PMs do Firestore
     const [patrulhas, pms] = await Promise.all([
       lerPatrulhasFS(),
       lerPmsFS()
     ]);
 
-    /* Procura a patrulha do RE */
-    const patrulha = encontrarPatrulhaDoReEmLista(re, patrulhas);
+    const patrulha = encontrarPatrulhaDoReNaData(re, dataISO, patrulhas);
 
-    /* Se não encontrou */
     if (!patrulha) {
-      mostrarMensagem("Não foi encontrada patrulha vinculada para este RE. Procure o responsável pelo cadastro.");
+      mostrarMensagem("Não foi encontrada escala vinculada para este RE na data selecionada.");
       return;
     }
 
-    /* Preenche dados */
+    const escala = patrulha?.escalasPorData?.[dataISO];
+
     esconderMensagem();
     conteudo.classList.remove("d-none");
 
-    /* Horário */
-    const hi = patrulha.horarioInicio || "--:--";
-    const hf = patrulha.horarioFim || "--:--";
+    const hi = escala?.horarioInicio || "--:--";
+    const hf = escala?.horarioFim || "--:--";
     txtHorario.textContent = `das ${hi} às ${hf}`;
 
-    /* Patrulha */
     txtPatrulha.textContent = `Patrulha ${patrulha.numero || "--"}`;
 
-    /* CPP */
     txtCpp.textContent = patrulha.cpp || "--";
-
-    /* Missão */
     txtMissao.textContent = patrulha.missao || "--";
 
-    /* Mapa */
     aplicarMapa(patrulha.mapa);
 
-    /* Composição */
-    renderizarComposicaoDaPatrulha(patrulha, pms);
+    renderizarComposicaoDaData(patrulha, dataISO, pms);
   } catch (err) {
     console.error(err);
     mostrarMensagem("Falha ao carregar dados do Firebase. Verifique sua conexão e tente novamente.");
   }
 })();
 
-/* =========================
-   Eventos
-   ========================= */
-
 /* Voltar */
 if (btnVoltar) {
   btnVoltar.addEventListener("click", () => {
-    // se quiser “limpar” o RE da sessão ao voltar:
-    sessionStorage.removeItem("opCarnaval_reAtual");
-    window.location.href = "index.html";
+    // volta para a lista de datas mantendo o RE
+    const re = normalizarRe(sessionStorage.getItem("opCarnaval_reAtual"));
+    if (re) window.location.href = `escala.html?re=${encodeURIComponent(re)}`;
+    else window.location.href = "index.html";
   });
 }

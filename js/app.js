@@ -70,7 +70,7 @@ formRe.addEventListener("submit", (event) => {
     sessionStorage.setItem("opCarnaval_reAtual", re);
 
     /* Redireciona para a tela final do operacional */
-    window.location.href = `operacao.html?re=${encodeURIComponent(re)}`;
+    window.location.href = `escala.html?re=${encodeURIComponent(re)}`;
 });
 // Commit de verificação geral
 
