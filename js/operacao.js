@@ -3,8 +3,10 @@
    =========================
    - Recebe RE pela URL (?re=123456) ou sessionStorage
    - Recebe DATA pela URL (?data=YYYY-MM-DD)
-   - Encontra patrulha onde escalasPorData[data].composicaoRe contém o RE
-   - Exibe: horário (da data), patrulha, composição (da data), CPP, missão e mapa
+   - Encontra patrulha onde:
+       patrulha.dataEscala === dataISO  E
+       patrulha.composicaoRe contém o RE
+   - Exibe: horário (da patrulha), patrulha, composição, CPP, missão e mapa
    ========================= */
 
 import { lerPatrulhasFS, lerPmsFS } from "./repositorio-firestore.js";
@@ -137,15 +139,14 @@ function postoPreferido(pm) {
   return pm?.postoGraduacao?.trim() || "--";
 }
 
-/* Renderiza composição DA DATA */
-function renderizarComposicaoDaData(patrulha, dataISO, pms) {
+/* Renderiza composição (modelo novo: patrulha.composicaoRe) */
+function renderizarComposicaoDaPatrulha(patrulha, pms) {
   if (!listaComposicaoPatrulha || !msgSemComposicao) return;
 
   listaComposicaoPatrulha.innerHTML = "";
   msgSemComposicao.classList.add("d-none");
 
-  const escala = patrulha?.escalasPorData?.[dataISO];
-  const composicao = Array.isArray(escala?.composicaoRe) ? escala.composicaoRe : [];
+  const composicao = Array.isArray(patrulha?.composicaoRe) ? patrulha.composicaoRe : [];
 
   if (composicao.length === 0) {
     msgSemComposicao.classList.remove("d-none");
@@ -178,15 +179,28 @@ function renderizarComposicaoDaData(patrulha, dataISO, pms) {
   });
 }
 
-/* Encontra patrulha do RE NA DATA */
+/* Encontra patrulha do RE NA DATA (modelo novo) */
 function encontrarPatrulhaDoReNaData(re, dataISO, patrulhas) {
   const reStr = String(re);
+  const dataStr = String(dataISO || "").trim();
 
   return (Array.isArray(patrulhas) ? patrulhas : []).find((p) => {
-    const escala = p?.escalasPorData?.[dataISO];
-    const comp = Array.isArray(escala?.composicaoRe) ? escala.composicaoRe : [];
+    const d = String(p?.dataEscala || "").trim();
+    if (d !== dataStr) return false;
+
+    const comp = Array.isArray(p?.composicaoRe) ? p.composicaoRe : [];
     return comp.map(String).includes(reStr);
   });
+}
+
+/* Horário (modelo novo) */
+function textoHorario(hIni, hFim) {
+  const a = String(hIni || "").trim();
+  const b = String(hFim || "").trim();
+  if (!a && !b) return "--:--";
+  if (a && b) return `das ${a} às ${b}`;
+  if (a) return `início ${a}`;
+  return `término ${b}`;
 }
 
 /* Inicialização */
@@ -196,7 +210,10 @@ function encontrarPatrulhaDoReNaData(re, dataISO, patrulhas) {
   const reSessao = normalizarRe(sessionStorage.getItem("opCarnaval_reAtual"));
   const re = reUrl || reSessao;
 
-  const dataISO = String(params.get("data") || "").trim(); // ✅ novo fluxo
+  const dataISO = String(params.get("data") || "").trim();
+
+  // mantém o RE na sessão para o "Voltar"
+  if (re) sessionStorage.setItem("opCarnaval_reAtual", re);
 
   badgeRe.textContent = re ? `RE ${re}` : "RE --";
 
@@ -223,14 +240,21 @@ function encontrarPatrulhaDoReNaData(re, dataISO, patrulhas) {
       return;
     }
 
-    const escala = patrulha?.escalasPorData?.[dataISO];
-
     esconderMensagem();
     conteudo.classList.remove("d-none");
 
-    const hi = escala?.horarioInicio || "--:--";
-    const hf = escala?.horarioFim || "--:--";
-    txtHorario.textContent = `das ${hi} às ${hf}`;
+    const hi = patrulha?.horarioInicio || "--:--";
+    const hf = patrulha?.horarioFim || "--:--";
+
+    // formata data para BR
+    const dataBR = (() => {
+      const [y, m, d] = String(dataISO || "").split("-");
+      return (y && m && d) ? `${d}/${m}/${y}` : dataISO;
+    })();
+
+    // data em cima + horário embaixo
+    txtHorario.textContent = `${dataBR}\n${textoHorario(hi, hf)}`;
+
 
     txtPatrulha.textContent = `Patrulha ${patrulha.numero || "--"}`;
 
@@ -239,7 +263,7 @@ function encontrarPatrulhaDoReNaData(re, dataISO, patrulhas) {
 
     aplicarMapa(patrulha.mapa);
 
-    renderizarComposicaoDaData(patrulha, dataISO, pms);
+    renderizarComposicaoDaPatrulha(patrulha, pms);
   } catch (err) {
     console.error(err);
     mostrarMensagem("Falha ao carregar dados do Firebase. Verifique sua conexão e tente novamente.");
@@ -249,7 +273,6 @@ function encontrarPatrulhaDoReNaData(re, dataISO, patrulhas) {
 /* Voltar */
 if (btnVoltar) {
   btnVoltar.addEventListener("click", () => {
-    // volta para a lista de datas mantendo o RE
     const re = normalizarRe(sessionStorage.getItem("opCarnaval_reAtual"));
     if (re) window.location.href = `escala.html?re=${encodeURIComponent(re)}`;
     else window.location.href = "index.html";

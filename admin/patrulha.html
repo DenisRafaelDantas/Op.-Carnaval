@@ -43,11 +43,39 @@
 
                     <!-- Subtexto -->
                     <p class="text-body-secondary mb-4">
-                        Preencha as informações da patrulha para a Operação Carnaval.
+                        Preencha as informações da patrulha. A numeração é gerada automaticamente por dia (01, 02, 03...).
                     </p>
 
                     <!-- Formulário principal -->
                     <form id="form-patrulha" novalidate>
+
+                        <!-- ✅ Data da patrulha -->
+                        <div class="mb-3">
+                            <label for="dataEscala" class="form-label">Data da Patrulha</label>
+                            <input type="date" class="form-control" id="dataEscala" name="dataEscala" required />
+                            <div class="invalid-feedback">
+                                Selecione a data da patrulha.
+                            </div>
+                            <div class="form-text">
+                                A numeração é reiniciada por data. Ex.: Patrulha 01 no dia 07 e Patrulha 01 no dia 08.
+                            </div>
+                        </div>
+
+                        <!-- ✅ Horário -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-sm-6">
+                                <label for="horaInicio" class="form-label">Horário de início</label>
+                                <input type="time" class="form-control" id="horaInicio" name="horaInicio" required />
+                                <div class="invalid-feedback">Informe o horário de início.</div>
+                            </div>
+
+                            <div class="col-12 col-sm-6">
+                                <label for="horaFim" class="form-label">Horário de término</label>
+                                <input type="time" class="form-control" id="horaFim" name="horaFim" required />
+                                <div class="invalid-feedback">Informe o horário de término.</div>
+                            </div>
+                        </div>
+
                         <!-- Número da patrulha (automático) -->
                         <div class="mb-3">
                             <label for="numeroPatrulha" class="form-label">Número da Patrulha</label>
@@ -58,7 +86,24 @@
 
                             <!-- Ajuda do campo -->
                             <div id="ajuda-numero" class="form-text">
-                                Gerado automaticamente (01, 02, 03...).
+                                Gerado automaticamente com base na data (01, 02, 03...).
+                            </div>
+                        </div>
+
+                        <!-- ✅ NOVO: Local + Revista (logo abaixo do número) -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-12 col-sm-6">
+                                <label for="local" class="form-label">Local</label>
+                                <input type="text" class="form-control" id="local" name="local"
+                                    placeholder="Ex.: Shopping Paulista / Rua X / Praça Y" required maxlength="120" />
+                                <div class="invalid-feedback">Informe o local da operação.</div>
+                            </div>
+
+                            <div class="col-12 col-sm-6">
+                                <label for="revista" class="form-label">Revista</label>
+                                <input type="text" class="form-control" id="revista" name="revista"
+                                    placeholder="Ex.: Base da Cia / Pátio / QG" required maxlength="120" />
+                                <div class="invalid-feedback">Informe o local da revista.</div>
                             </div>
                         </div>
 
@@ -79,11 +124,7 @@
                         <div class="mb-3">
                             <label for="mapa" class="form-label">Mapa (Google Maps)</label>
 
-
-                            <!-- Campo onde pode colar link ou embed -->
-                            <input type="url" class="form-control" data-no-uppercase 
-                            id="mapa" 
-                            name="googleMaps"
+                            <input type="url" class="form-control" data-no-uppercase id="mapa" name="googleMaps"
                                 placeholder="Cole aqui um link do Google Maps ou um código de incorporação (iframe)."
                                 aria-describedby="ajuda-mapa" />
 
@@ -94,22 +135,20 @@
 
                         <!-- Prévia do mapa -->
                         <div class="mb-4">
-                            <!-- Texto pequeno para orientar -->
                             <div class="d-flex align-items-center justify-content-between mb-2">
                                 <span class="text-body-secondary small">Prévia do mapa</span>
 
-                                <!-- Botão pequeno para limpar o mapa -->
                                 <button type="button" id="btnLimparMapa" class="btn btn-outline-secondary btn-sm">
                                     Limpar mapa
                                 </button>
                             </div>
 
-                            <!-- iframe de preview (vai ser preenchido via JS) -->
-                             <div class="mapa-preview-wrapper">
-                            <iframe id="mapaPreview" class="mapa-preview" src="" loading="lazy"
-                                referrerpolicy="no-referrer-when-downgrade" title="Prévia do Google Maps"></iframe>
+                            <div class="mapa-preview-wrapper">
+                                <iframe id="mapaPreview" class="mapa-preview" src="" loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                    title="Prévia do Google Maps"></iframe>
                             </div>
-                            <!-- Mensagem discreta quando não tiver mapa -->
+
                             <div id="mapaVazio" class="text-body-secondary small mt-2">
                                 Cole um link ou embed para visualizar aqui.
                             </div>
@@ -134,19 +173,16 @@
 
                         <!-- Botões de ação -->
                         <div class="d-flex gap-2">
-                            <!-- Botão salvar -->
                             <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                                 Salvar
                             </button>
 
-                            <!-- Botão cancelar -->
                             <button type="button" id="btnCancelar" class="btn btn-secondary btn-lg">
                                 Cancelar
                             </button>
                         </div>
                     </form>
 
-                    <!-- Rodapé pequeno -->
                     <p class="text-center text-body-secondary small mt-3 mb-0">
                         PMESP • Cadastro de Patrulhas
                     </p>
@@ -167,4 +203,3 @@
 </body>
 
 </html>
-<!-- Commit de verificação geral -->

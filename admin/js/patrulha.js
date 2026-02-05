@@ -1,5 +1,7 @@
 /* =========================
    Admin • Cadastro de Patrulha (Criar/Editar) • Firestore
+   - Patrulha possui: dataEscala, horarioInicio, horarioFim, local, revista
+   - Número é gerado AUTOMATICAMENTE POR DIA (reinicia a cada data)
    ========================= */
 
 import {
@@ -21,7 +23,7 @@ function porIdPossiveis(listaIds) {
 }
 
 /* =========================
-   Referências (tentei cobrir nomes comuns)
+   Referências
    ========================= */
 
 /* Form */
@@ -32,7 +34,39 @@ const formPatrulha = porIdPossiveis([
   "formCadastroPatrulha"
 ]);
 
-/* Campos */
+/* Campos NOVOS */
+const inputDataEscala = porIdPossiveis([
+  "dataEscala",
+  "data",
+  "dataPatrulha"
+]);
+
+const inputHoraInicio = porIdPossiveis([
+  "horaInicio",
+  "inicio",
+  "horarioInicio"
+]);
+
+const inputHoraFim = porIdPossiveis([
+  "horaFim",
+  "fim",
+  "horarioFim"
+]);
+
+/* ✅ NOVOS: Local e Revista */
+const inputLocal = porIdPossiveis([
+  "local",
+  "localOperacao",
+  "localDaOperacao"
+]);
+
+const inputRevista = porIdPossiveis([
+  "revista",
+  "localRevista",
+  "revistaLocal"
+]);
+
+/* Campos antigos */
 const inputNumero = porIdPossiveis([
   "numeroPatrulha",
   "numero",
@@ -69,38 +103,55 @@ const btnCancelar = porIdPossiveis([
   "cancelar"
 ]);
 
-/* =========================
-   Segurança: valida se elementos essenciais existem
-   ========================= */
-if (!formPatrulha || !inputNumero || !inputCpp || !inputMapa || !inputMissao || !btnCancelar) {
+/* Segurança */
+if (
+  !formPatrulha ||
+  !inputNumero || !inputCpp || !inputMapa || !inputMissao || !btnCancelar ||
+  !inputDataEscala || !inputHoraInicio || !inputHoraFim ||
+  !inputLocal || !inputRevista
+) {
   console.error("IDs esperados não encontrados no patrulha.html.");
   alert("Erro: não encontrei alguns campos do formulário. Verifique os IDs no patrulha.html.");
 }
 
-/* =========================
-   Estado (modo)
-   ========================= */
+/* Estado (modo) */
 const params = new URLSearchParams(window.location.search);
-const idEdicao = params.get("id");      // string docId do Firestore
+const idEdicao = params.get("id");      // docId do Firestore
 const MODO_EDICAO = Boolean(idEdicao);
 
 /* =========================
    Validação simples
    ========================= */
 function campoVazio(el) {
-  return !String(el.value || "").trim();
+  return !String(el?.value || "").trim();
 }
 
 function marcarInvalido(el, invalido) {
+  if (!el) return;
   if (invalido) el.classList.add("is-invalid");
   else el.classList.remove("is-invalid");
 }
 
-/* Número automático: pega o maior número e soma 1 (01, 02...) */
-async function proximoNumeroPatrulhaFS() {
+function hojeISO() {
+  const d = new Date();
+  const yyyy = String(d.getFullYear());
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/* =========================
+   Número automático POR DIA:
+   - pega o maior número dentro da MESMA DATA e soma 1 (01, 02...)
+   ========================= */
+async function proximoNumeroPatrulhaPorDataFS(dataISO) {
   const lista = await lerPatrulhasFS();
 
-  const nums = lista
+  const filtradas = lista.filter((p) =>
+    String(p?.dataEscala || "").trim() === String(dataISO || "").trim()
+  );
+
+  const nums = filtradas
     .map((p) => String(p.numero || "").replace(/\D/g, ""))
     .filter((s) => s.length > 0)
     .map((s) => Number(s))
@@ -112,13 +163,27 @@ async function proximoNumeroPatrulhaFS() {
   return prox < 100 ? String(prox).padStart(2, "0") : String(prox);
 }
 
+async function recalcularNumeroSeCadastro() {
+  if (MODO_EDICAO) return;
+
+  const dataISO = String(inputDataEscala.value || "").trim();
+  if (!dataISO) {
+    inputNumero.value = "";
+    return;
+  }
+
+  inputNumero.value = await proximoNumeroPatrulhaPorDataFS(dataISO);
+  inputNumero.disabled = true;
+}
+
 /* =========================
    Modo editar: carregar dados
    ========================= */
 async function aplicarModoEdicaoSeNecessario() {
+  // define data padrão no cadastro
   if (!MODO_EDICAO) {
-    /* Cadastro: número automático e travado */
-    inputNumero.value = await proximoNumeroPatrulhaFS();
+    inputDataEscala.value = hojeISO();
+    await recalcularNumeroSeCadastro();
     inputNumero.disabled = true;
     return;
   }
@@ -137,7 +202,16 @@ async function aplicarModoEdicaoSeNecessario() {
   }
 
   /* Preenche */
+  inputDataEscala.value = String(patrulha.dataEscala || "");
+  inputHoraInicio.value = String(patrulha.horarioInicio || "");
+  inputHoraFim.value = String(patrulha.horarioFim || "");
+
   inputNumero.value = String(patrulha.numero || "");
+
+  // ✅ novos campos
+  inputLocal.value = String(patrulha.local || "");
+  inputRevista.value = String(patrulha.revista || "");
+
   inputCpp.value = String(patrulha.cpp || "");
   inputMapa.value = String(patrulha.mapa || "");
   inputMissao.value = String(patrulha.missao || "");
@@ -164,10 +238,31 @@ async function aplicarModoEdicaoSeNecessario() {
    ========================= */
 
 /* Remove erro ao digitar */
-[inputCpp, inputMapa, inputMissao].forEach((campo) => {
+[
+  inputDataEscala,
+  inputHoraInicio,
+  inputHoraFim,
+  inputLocal,
+  inputRevista,
+  inputCpp,
+  inputMapa,
+  inputMissao
+].forEach((campo) => {
   if (!campo) return;
   campo.addEventListener("input", () => marcarInvalido(campo, false));
 });
+
+/* Se trocar data no CADASTRO, recalcula o número automaticamente */
+if (inputDataEscala) {
+  inputDataEscala.addEventListener("change", async () => {
+    marcarInvalido(inputDataEscala, false);
+    try {
+      await recalcularNumeroSeCadastro();
+    } catch (e) {
+      console.warn("Falha ao recalcular número por data:", e);
+    }
+  });
+}
 
 /* Cancelar */
 if (btnCancelar) {
@@ -183,6 +278,14 @@ if (formPatrulha) {
 
     let ok = true;
 
+    if (campoVazio(inputDataEscala)) { marcarInvalido(inputDataEscala, true); ok = false; }
+    if (campoVazio(inputHoraInicio)) { marcarInvalido(inputHoraInicio, true); ok = false; }
+    if (campoVazio(inputHoraFim)) { marcarInvalido(inputHoraFim, true); ok = false; }
+
+    // ✅ novos obrigatórios
+    if (campoVazio(inputLocal)) { marcarInvalido(inputLocal, true); ok = false; }
+    if (campoVazio(inputRevista)) { marcarInvalido(inputRevista, true); ok = false; }
+
     if (campoVazio(inputCpp)) { marcarInvalido(inputCpp, true); ok = false; }
     if (campoVazio(inputMapa)) { marcarInvalido(inputMapa, true); ok = false; }
     if (campoVazio(inputMissao)) { marcarInvalido(inputMissao, true); ok = false; }
@@ -190,7 +293,16 @@ if (formPatrulha) {
     if (!ok) return;
 
     const dados = {
+      dataEscala: String(inputDataEscala.value || "").trim(),
+      horarioInicio: String(inputHoraInicio.value || "").trim(),
+      horarioFim: String(inputHoraFim.value || "").trim(),
+
       numero: String(inputNumero.value || "").trim(),
+
+      // ✅ novos campos
+      local: String(inputLocal.value || "").trim(),
+      revista: String(inputRevista.value || "").trim(),
+
       cpp: String(inputCpp.value || "").trim(),
       mapa: String(inputMapa.value || "").trim(),
       missao: String(inputMissao.value || "").trim()
@@ -204,7 +316,7 @@ if (formPatrulha) {
           atualizadoEm: new Date().toISOString()
         });
 
-        alert(`PATRULHA ${dados.numero} ATUALIZADA.`);
+        alert(`PATRULHA ${dados.numero} (${dados.dataEscala}) ATUALIZADA.`);
         window.location.href = "patrulhas.html";
         return;
       }
@@ -212,26 +324,29 @@ if (formPatrulha) {
       /* CADASTRAR */
       const nova = {
         ...dados,
-        // deixa composição pronta para o vínculo
-        composicaoRe: [],
+        composicaoRe: [], // pronto para o vínculo
         criadoEm: new Date().toISOString()
       };
 
       await criarPatrulhaFS(nova);
 
-      alert(`PATRULHA ${dados.numero} CADASTRADA.`);
+      alert(`PATRULHA ${dados.numero} (${dados.dataEscala}) CADASTRADA.`);
 
-      /* Prepara próxima */
-      inputNumero.value = await proximoNumeroPatrulhaFS();
+      /* Prepara próxima (mantém a data e recalcula número) */
+      inputLocal.value = "";
+      inputRevista.value = "";
       inputCpp.value = "";
       inputMapa.value = "";
       inputMissao.value = "";
 
+      marcarInvalido(inputLocal, false);
+      marcarInvalido(inputRevista, false);
       marcarInvalido(inputCpp, false);
       marcarInvalido(inputMapa, false);
       marcarInvalido(inputMissao, false);
 
       atualizarPreviaMapa();
+      await recalcularNumeroSeCadastro();
     } catch (err) {
       console.error(err);
       alert("Não foi possível salvar a patrulha. Verifique se você está logado como admin.");
@@ -312,5 +427,5 @@ if (btnLimparMapa) {
   });
 }
 
-// primeira chamada (em cadastro)
+// primeira chamada (em cadastro/edição)
 atualizarPreviaMapa();

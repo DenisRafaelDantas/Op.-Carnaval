@@ -50,7 +50,33 @@
             </a>
           </div>
 
-          <!-- Área onde os cards/tabela serão renderizados -->
+          <!-- ✅ Filtro por data (mantendo estilo simples e alinhado) -->
+          <div class="border rounded p-3 mb-3">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-6">
+                <label for="filtroData" class="form-label mb-1">Filtrar por data</label>
+                <input type="date" class="form-control" id="filtroData" />
+                <div class="text-body-secondary small mt-1">
+                  A listagem é baseada na <strong>data cadastrada na patrulha</strong>.
+                </div>
+              </div>
+
+              <div class="col-12 col-md-6 d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary w-100" id="btnHoje">
+                  Hoje
+                </button>
+                <button type="button" class="btn btn-outline-secondary w-100" id="btnLimparData">
+                  Limpar
+                </button>
+              </div>
+            </div>
+
+            <div class="text-body-secondary small mt-2" id="statusPatrulhas">
+              Selecione uma data para listar as patrulhas.
+            </div>
+          </div>
+
+          <!-- Área onde os cards serão renderizados -->
           <div id="listaPatrulhas"></div>
 
           <!-- Mensagem vazia -->

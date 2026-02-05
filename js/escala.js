@@ -1,8 +1,11 @@
 /* =========================
    Escala • Tela do Policial (Firestore) • LISTA DE DATAS
+   - Modelo novo:
+       patrulha.dataEscala (YYYY-MM-DD)
+       patrulha.horarioInicio / patrulha.horarioFim
+       patrulha.composicaoRe (lista de REs)
    - Mostra só HOJE e futuras
    - Ordena por datas mais próximas primeiro
-   - Normaliza chaves de data (YYYY-MM-DD / YYYY-M-D / DD/MM/YYYY)
    ========================= */
 
 import { lerPatrulhasFS } from "./repositorio-firestore.js";
@@ -50,11 +53,11 @@ function tsMeiaNoiteLocal(dataISO) {
   return new Date(y, m - 1, d, 0, 0, 0, 0).getTime();
 }
 
-/* Normaliza chaves de data para ISO (YYYY-MM-DD) */
+/* Normaliza data para ISO (defensivo) */
 function normalizarDataParaISO(chave) {
   const s = String(chave || "").trim();
 
-  // já está no padrão YYYY-MM-DD (ou YYYY-M-D)
+  // YYYY-MM-DD (ou YYYY-M-D)
   let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   if (m) {
     const yyyy = m[1];
@@ -63,7 +66,7 @@ function normalizarDataParaISO(chave) {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  // padrão DD/MM/YYYY
+  // DD/MM/YYYY
   m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (m) {
     const dd = String(m[1]).padStart(2, "0");
@@ -72,39 +75,43 @@ function normalizarDataParaISO(chave) {
     return `${yyyy}-${mm}-${dd}`;
   }
 
-  // desconhecido: devolve como está (vai virar inválido no timestamp)
   return s;
 }
 
-/* Coleta datas em que o RE aparece em escalasPorData[data].composicaoRe */
+function textoHorario(hIni, hFim) {
+  const a = String(hIni || "").trim();
+  const b = String(hFim || "").trim();
+  if (!a && !b) return "";
+  if (a && b) return `${a} às ${b}`;
+  if (a) return `${a} (início)`;
+  return `${b} (término)`;
+}
+
+/* Coleta datas em que o RE aparece em patrulha.composicaoRe */
 function coletarDatasDoReEmPatrulhas(re, patrulhas) {
   const resultados = [];
   const reStr = String(re);
 
   (Array.isArray(patrulhas) ? patrulhas : []).forEach((p) => {
-    const numero = String(p?.numero || "--");
+    const dataISO = normalizarDataParaISO(p?.dataEscala);
+    if (!dataISO) return;
 
-    const escalasPorData = p?.escalasPorData;
-    if (!escalasPorData || typeof escalasPorData !== "object") return;
+    const comp = Array.isArray(p?.composicaoRe) ? p.composicaoRe : [];
+    const contemRe = comp.map(String).includes(reStr);
+    if (!contemRe) return;
 
-    Object.entries(escalasPorData).forEach(([chaveData, escala]) => {
-      const dataISO = normalizarDataParaISO(chaveData);
-
-      const comp = Array.isArray(escala?.composicaoRe) ? escala.composicaoRe : [];
-      const contemRe = comp.map(String).includes(reStr);
-
-      if (contemRe) {
-        resultados.push({
-          dataISO,
-          patrulhaNumero: numero
-        });
-      }
+    resultados.push({
+      dataISO,
+      patrulhaNumero: String(p?.numero || "--"),
+      horarioInicio: String(p?.horarioInicio || ""),
+      horarioFim: String(p?.horarioFim || "")
     });
   });
 
   return resultados;
 }
 
+/* Render da lista */
 function renderizarLista(datas, re) {
   listaDatas.innerHTML = "";
 
@@ -148,7 +155,11 @@ function renderizarLista(datas, re) {
 
     const subt = document.createElement("div");
     subt.className = "text-body-secondary small";
-    subt.textContent = `Patrulha ${item.patrulhaNumero}`;
+
+    const horario = textoHorario(item.horarioInicio, item.horarioFim);
+    subt.textContent = horario
+      ? `Patrulha ${item.patrulhaNumero} • ${horario}`
+      : `Patrulha ${item.patrulhaNumero}`;
 
     esquerda.appendChild(topo);
     esquerda.appendChild(subt);
@@ -163,7 +174,6 @@ function renderizarLista(datas, re) {
     listaDatas.appendChild(a);
   });
 }
-
 
 /* Inicialização */
 (async function init() {
@@ -181,11 +191,6 @@ function renderizarLista(datas, re) {
 
   try {
     const patrulhas = await lerPatrulhasFS();
-
-    // 🔎 debug rápido (abre o console e confere)
-    console.log("[escala] RE:", re);
-    console.log("[escala] patrulhas carregadas:", patrulhas?.length || 0);
-    console.log("[escala] exemplo patrulha:", patrulhas?.[0]);
 
     let datas = coletarDatasDoReEmPatrulhas(re, patrulhas);
 

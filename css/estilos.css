@@ -89,8 +89,8 @@ body {
 
 /* “Sobe” o iframe para esconder a faixa */
 .mapa-preview {
-  width: 300px;
-  height: 350px;             
+  width: 410px;
+  height: 400px;             
   border: 0;
   position: relative;
   top: -70px;               

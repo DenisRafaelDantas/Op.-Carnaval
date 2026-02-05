@@ -43,43 +43,14 @@
             <div>
               <h1 class="h5 mb-1">Vincular PM à Patrulha</h1>
               <p class="text-body-secondary mb-0">
-                Defina a data, horário e selecione os policiais que compõem a patrulha.
+                Selecione os policiais que compõem esta patrulha. A data e o horário são definidos no cadastro da patrulha.
               </p>
             </div>
 
             <!-- Identificação da patrulha (preenchida via JS) -->
             <div class="text-end">
               <div class="badge text-bg-secondary" id="badgePatrulha">Patrulha --</div>
-            </div>
-          </div>
-
-          <!-- ✅ Data da escala -->
-          <div class="row g-3 mb-3">
-            <div class="col-12 col-sm-6">
-              <label for="dataEscala" class="form-label">Data</label>
-              <input type="date" class="form-control" id="dataEscala" name="dataEscala" required />
-              <div class="invalid-feedback">Selecione a data.</div>
-            </div>
-
-            <div class="col-12 col-sm-6 d-flex align-items-end">
-              <div class="text-body-secondary small">
-                Ao trocar a data, os horários e a composição serão carregados automaticamente.
-              </div>
-            </div>
-          </div>
-
-          <!-- Horário de início / término -->
-          <div class="row g-3 mb-3">
-            <div class="col-12 col-sm-6">
-              <label for="horaInicio" class="form-label">Horário de início</label>
-              <input type="time" class="form-control" id="horaInicio" name="horaInicio" required />
-              <div class="invalid-feedback">Informe o horário de início.</div>
-            </div>
-
-            <div class="col-12 col-sm-6">
-              <label for="horaFim" class="form-label">Horário de término</label>
-              <input type="time" class="form-control" id="horaFim" name="horaFim" required />
-              <div class="invalid-feedback">Informe o horário de término.</div>
+              <div class="text-body-secondary small mt-1" id="badgeInfo">Data/Horário: --</div>
             </div>
           </div>
 
