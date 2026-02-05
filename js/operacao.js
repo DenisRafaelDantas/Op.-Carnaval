@@ -151,7 +151,12 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
   msgSemComposicao.classList.add("d-none");
 
   const composicao = Array.isArray(patrulha?.composicaoRe) ? patrulha.composicaoRe : [];
-  const comandanteRe = String(patrulha?.comandanteRe || "").trim(); // ✅ novo
+  const comandanteRe = String(patrulha?.comandanteRe || "").trim();
+
+  // ✅ NOVO: grupos ABC (objeto: { "123456": "A", ... })
+  const gruposABC = (patrulha?.gruposABC && typeof patrulha.gruposABC === "object")
+    ? patrulha.gruposABC
+    : {};
 
   if (composicao.length === 0) {
     msgSemComposicao.classList.remove("d-none");
@@ -166,11 +171,24 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
       re: String(re),
       postoGraduacao: pm?.postoGraduacao || "",
       nomeExibir: pm ? nomePreferido(pm) : "(não encontrado no cadastro)",
-      existe: Boolean(pm)
+      existe: Boolean(pm),
+      // ✅ pega o grupo (A/B/C) se existir
+      grupo: String(gruposABC?.[String(re)] || "").toUpperCase().trim()
     };
   });
 
   const ordenados = ordenarComposicaoPorAntiguidade(itens);
+
+  // ✅ Cabeçalho (opcional, mas fica bem claro)
+  const header = document.createElement("li");
+  header.className = "list-group-item";
+  header.innerHTML = `
+    <div class="d-flex align-items-center justify-content-between gap-3">
+      <div class="fw-semibold">PM</div>
+      <div class="fw-semibold text-body-secondary">Grupo</div>
+    </div>
+  `;
+  listaComposicaoPatrulha.appendChild(header);
 
   ordenados.forEach((item) => {
     const ehCmd = comandanteRe && String(item.re) === String(comandanteRe);
@@ -179,20 +197,35 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
       ? `${postoPreferido({ postoGraduacao: item.postoGraduacao })} ${item.re} – ${item.nomeExibir}`
       : `RE ${item.re} – (não encontrado no cadastro)`;
 
+    // grupo validado
+    const grupo = (item.grupo === "A" || item.grupo === "B" || item.grupo === "C")
+      ? item.grupo
+      : "--";
+
     const li = document.createElement("li");
     li.className = "list-group-item";
 
-    // ✅ comandante em vermelho
+    // ✅ comandante em vermelho (como já estava)
     if (ehCmd) {
       li.classList.add("list-group-item-danger", "fw-semibold");
-      li.textContent = `${texto} (CMD)`;
-    } else {
-      li.textContent = texto;
     }
+
+    // ✅ 2 colunas: nome | grupo
+    li.innerHTML = `
+      <div class="d-flex align-items-center justify-content-between gap-3">
+        <div class="text-break">
+          ${ehCmd ? `${texto} (CMD)` : texto}
+        </div>
+        <div class="ms-auto">
+          <span class="badge text-bg-secondary">${grupo}</span>
+        </div>
+      </div>
+    `;
 
     listaComposicaoPatrulha.appendChild(li);
   });
 }
+
 
 /* Encontra patrulha do RE NA DATA (modelo novo) */
 function encontrarPatrulhaDoReNaData(re, dataISO, patrulhas) {
