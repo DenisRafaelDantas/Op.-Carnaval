@@ -21,9 +21,9 @@
 
 <body>
   <!-- Conteúdo principal -->
-  <main class="container py-4">
-    <!-- Limita largura como nas outras telas -->
-    <div class="mx-auto conteudo-largura">
+  <main class="container-fluid py-4">
+    <!-- ✅ Mais largo, mas ainda centralizado e bonito -->
+    <div class="mx-auto px-2 px-md-3" style="max-width: 1200px;">
 
       <!-- Cabeçalho com brasões -->
       <header class="cabecalho-interno">
@@ -54,11 +54,11 @@
             </div>
           </div>
 
-          <!-- Layout responsivo -->
+          <!-- ✅ Layout mais equilibrado -->
           <div class="row g-3">
 
             <!-- COMPOSIÇÃO -->
-            <div class="col-12 col-lg-5 order-1 order-lg-2">
+            <div class="col-12 col-xl-6 order-1 order-xl-2">
               <div class="border rounded p-3 bg-dark-subtle overflow-hidden">
 
                 <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
@@ -70,6 +70,11 @@
                   </button>
                 </div>
 
+                <!-- ✅ legenda curtinha para não confundir -->
+                <div class="text-body-secondary small mb-2">
+                  Marque <strong>CMD</strong> para definir o comandante (apenas 1). Marque <strong>A/B/C</strong> para definir o grupo (apenas 1 por PM).
+                </div>
+
                 <div class="lista-rolavel" id="listaComposicao"></div>
 
                 <div class="text-body-secondary small mt-2" id="msgComposicaoVazia">
@@ -79,7 +84,7 @@
             </div>
 
             <!-- PESQUISA + LISTA -->
-            <div class="col-12 col-lg-7 order-2 order-lg-1">
+            <div class="col-12 col-xl-6 order-2 order-xl-1">
               <div class="border rounded p-3">
 
                 <label for="filtroRe" class="form-label">Pesquisar por RE (sem dígito)</label>

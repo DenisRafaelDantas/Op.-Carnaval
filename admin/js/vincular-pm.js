@@ -3,7 +3,11 @@
    - DATA/HORA pertencem à patrulha (cadastro da patrulha)
    - Aqui montamos a COMPOSIÇÃO
    - Disponibilidade é calculada por DATA da patrulha
-   - ✅ NOVO: Selecionar Comandante (um RE) e destacar em vermelho
+   - ✅ CMD: selecionar 1 comandante (destaca linha em vermelho)
+   - ✅ Grupos A/B/C: cada integrante deve estar em 1 grupo (A OU B OU C) ou nenhum
+   - Salva em Firestore:
+       comandanteRe: "123456"
+       gruposABC: { "123456": "A", "234567": "B" }
    ========================= */
 
 import {
@@ -133,22 +137,33 @@ let patrulhaAtual = null;
 let patrulhasTodas = [];
 let pms = [];
 let composicaoRe = [];
-let comandanteRe = ""; // ✅ novo
+
+let comandanteRe = "";          // ✅ um único
+let gruposABC = {};             // ✅ { "123456": "A" }
 
 /* =========================
    Persistência (Firestore)
-   - Salva composição + comandante
+   - Salva composição + comandante + gruposABC
    ========================= */
-async function salvarComposicaoPatrulha(composicao, comandante) {
-  const comp = Array.isArray(composicao) ? composicao : [];
-  const cmd = String(comandante || "").trim();
+async function salvarDadosPatrulha(comp, cmd, grupos) {
+  const composicao = Array.isArray(comp) ? comp.map(String) : [];
+  const comandante = String(cmd || "").trim();
 
   // segurança: comandante precisa existir na composição, senão limpa
-  const cmdFinal = (cmd && comp.map(String).includes(String(cmd))) ? cmd : "";
+  const comandanteFinal = (comandante && composicao.includes(comandante)) ? comandante : "";
+
+  // filtra grupos: só mantém quem está na composição e valores A/B/C
+  const gruposFinal = {};
+  const g = (grupos && typeof grupos === "object") ? grupos : {};
+  composicao.forEach((re) => {
+    const v = String(g[re] || "").toUpperCase().trim();
+    if (v === "A" || v === "B" || v === "C") gruposFinal[re] = v;
+  });
 
   await atualizarPatrulhaFS(idPatrulha, {
-    composicaoRe: comp,
-    comandanteRe: cmdFinal,
+    composicaoRe: composicao,
+    comandanteRe: comandanteFinal,
+    gruposABC: gruposFinal,
     atualizadoEm: new Date().toISOString()
   });
 
@@ -165,7 +180,6 @@ function dataDaPatrulhaAtualISO() {
 }
 
 function composicaoDaPatrulhaNaData(p) {
-  // Como a data é fixa dentro da patrulha, basta usar composicaoRe.
   const comp = Array.isArray(p?.composicaoRe) ? p.composicaoRe : [];
   return comp.map(String);
 }
@@ -201,7 +215,7 @@ function obterMapaReParaPatrulhaNaMesmaData(dataISO) {
 }
 
 /* =========================
-   Renderização • Lista de PMs
+   Renderização • Lista de PMs (disponíveis)
    ========================= */
 function renderizarListaPms() {
   listaPms.innerHTML = "";
@@ -285,7 +299,23 @@ function renderizarListaPms() {
 }
 
 /* =========================
-   Renderização • Composição (com CMD)
+   Helpers dos grupos A/B/C
+   ========================= */
+function grupoAtualDoRe(re) {
+  const v = String(gruposABC?.[String(re)] || "").toUpperCase().trim();
+  return (v === "A" || v === "B" || v === "C") ? v : "";
+}
+
+function definirGrupoDoRe(re, grupo) {
+  const r = String(re);
+  const g = String(grupo || "").toUpperCase().trim();
+
+  if (g === "A" || g === "B" || g === "C") gruposABC[r] = g;
+  else delete gruposABC[r];
+}
+
+/* =========================
+   Renderização • Composição (CMD + A/B/C)
    ========================= */
 function renderizarComposicao() {
   listaComposicao.innerHTML = "";
@@ -299,83 +329,157 @@ function renderizarComposicao() {
 
   const mapPms = new Map(pms.map((pm) => [String(pm.re), pm]));
 
-  // Container estilo list-group (fica bonito e fácil de colorir)
   const ul = document.createElement("div");
   ul.className = "list-group";
 
   composicaoRe.forEach((re) => {
     const pm = mapPms.get(String(re));
     const ehCmd = String(comandanteRe || "") === String(re);
+    const grp = grupoAtualDoRe(re);
 
     const linha = document.createElement("div");
-    linha.className = "list-group-item d-flex align-items-center justify-content-between gap-2";
+    linha.className = "list-group-item d-flex align-items-start justify-content-between gap-3 flex-wrap";
 
-    // ✅ comandante em vermelho
     if (ehCmd) linha.classList.add("list-group-item-danger");
 
-    // ESQUERDA: remover checkbox + nome
+    /* ESQUERDA: remover + texto */
     const esquerda = document.createElement("div");
-    esquerda.className = "d-flex align-items-center gap-2";
+    esquerda.className = "d-flex align-items-start gap-2 flex-grow-1";
+    esquerda.style.minWidth = "320px";
 
     const checkRemover = document.createElement("input");
     checkRemover.type = "checkbox";
-    checkRemover.className = "form-check-input";
+    checkRemover.className = "form-check-input mt-1";
     checkRemover.id = `remPm_${re}`;
     checkRemover.dataset.re = String(re);
+
+    const blocoTexto = document.createElement("div");
 
     const texto = document.createElement("label");
     texto.className = "form-check-label";
     texto.setAttribute("for", checkRemover.id);
     texto.textContent = pm ? textoPm(pm) : `${re} - (PM não encontrado no cadastro)`;
 
+    const infoLinha2 = document.createElement("div");
+    infoLinha2.className = "text-body-secondary small mt-1";
+    infoLinha2.textContent = grp ? `Grupo: ${grp}` : "Grupo: --";
+
+    blocoTexto.appendChild(texto);
+    blocoTexto.appendChild(infoLinha2);
+
     esquerda.appendChild(checkRemover);
-    esquerda.appendChild(texto);
+    esquerda.appendChild(blocoTexto);
 
-    // DIREITA: checkbox CMD (apenas um por vez)
+    /* DIREITA: CMD + A/B/C */
     const direita = document.createElement("div");
-    direita.className = "d-flex align-items-center gap-2";
+    direita.className = "d-flex align-items-center gap-3 ms-auto";
+    direita.style.whiteSpace = "nowrap";
 
+    // ---------- CMD ----------
     const cmdId = `cmd_${re}`;
 
-    const checkCmd = document.createElement("input");
-    checkCmd.type = "checkbox"; // ✅ pedido “check”
-    checkCmd.className = "form-check-input";
-    checkCmd.id = cmdId;
-    checkCmd.dataset.re = String(re);
-    checkCmd.checked = ehCmd;
+    const caixaCmd = document.createElement("div");
+    caixaCmd.className = "d-flex align-items-center gap-1";
 
     const lblCmd = document.createElement("label");
     lblCmd.className = "form-check-label small";
     lblCmd.setAttribute("for", cmdId);
     lblCmd.textContent = "CMD";
 
-    // quando marcar um, desmarca todos os outros e define comandanteRe
+    const checkCmd = document.createElement("input");
+    checkCmd.type = "checkbox";
+    checkCmd.className = "form-check-input";
+    checkCmd.id = cmdId;
+    checkCmd.dataset.re = String(re);
+    checkCmd.checked = ehCmd;
+
     checkCmd.addEventListener("change", async () => {
       if (checkCmd.checked) {
         comandanteRe = String(re);
 
-        // desmarca os outros
+        // desmarca os outros CMD
         const outros = listaComposicao.querySelectorAll('input[type="checkbox"][id^="cmd_"]');
         outros.forEach((el) => {
           if (el !== checkCmd) el.checked = false;
         });
       } else {
-        // se desmarcou o próprio comandante, limpa
         if (String(comandanteRe) === String(re)) comandanteRe = "";
       }
 
-      // salva imediatamente (pra não perder)
       try {
-        await salvarComposicaoPatrulha(composicaoRe, comandanteRe);
-        aplicarPatrulhaNaTela(); // repinta vermelho certinho
+        await salvarDadosPatrulha(composicaoRe, comandanteRe, gruposABC);
+        aplicarPatrulhaNaTela();
       } catch (e) {
         console.error(e);
         alert("Falha ao salvar o comandante no Firebase.");
       }
     });
 
-    direita.appendChild(lblCmd);
-    direita.appendChild(checkCmd);
+    caixaCmd.appendChild(lblCmd);
+    caixaCmd.appendChild(checkCmd);
+
+    // ---------- A/B/C (checks exclusivos) ----------
+    function criarCheckGrupo(letra) {
+      const id = `grp_${letra}_${re}`;
+
+      const caixa = document.createElement("div");
+      caixa.className = "d-flex align-items-center gap-1";
+
+      const lbl = document.createElement("label");
+      lbl.className = "form-check-label small";
+      lbl.setAttribute("for", id);
+      lbl.textContent = letra;
+
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.className = "form-check-input";
+      chk.id = id;
+      chk.dataset.re = String(re);
+      chk.dataset.grupo = letra;
+
+      chk.checked = (grp === letra);
+
+      chk.addEventListener("change", async () => {
+        const r = String(re);
+
+        if (chk.checked) {
+          // define esse grupo
+          definirGrupoDoRe(r, letra);
+
+          // desmarca os outros grupos desse mesmo RE
+          const outros = listaComposicao.querySelectorAll(
+            `input[type="checkbox"][id^="grp_"][data-re="${CSS.escape(r)}"]`
+          );
+          outros.forEach((el) => {
+            if (el !== chk) el.checked = false;
+          });
+        } else {
+          // se desmarcou o grupo atual, limpa
+          if (grupoAtualDoRe(r) === letra) definirGrupoDoRe(r, "");
+        }
+
+        try {
+          await salvarDadosPatrulha(composicaoRe, comandanteRe, gruposABC);
+          aplicarPatrulhaNaTela();
+        } catch (e) {
+          console.error(e);
+          alert("Falha ao salvar o grupo no Firebase.");
+        }
+      });
+
+      caixa.appendChild(lbl);
+      caixa.appendChild(chk);
+      return caixa;
+    }
+
+    const caixaA = criarCheckGrupo("A");
+    const caixaB = criarCheckGrupo("B");
+    const caixaC = criarCheckGrupo("C");
+
+    direita.appendChild(caixaCmd);
+    direita.appendChild(caixaA);
+    direita.appendChild(caixaB);
+    direita.appendChild(caixaC);
 
     linha.appendChild(esquerda);
     linha.appendChild(direita);
@@ -402,10 +506,20 @@ function aplicarPatrulhaNaTela() {
 
   comandanteRe = String(patrulhaAtual?.comandanteRe || "").trim();
 
-  // segurança: se comandante não está mais na composição, limpa em memória
+  // ✅ grupos A/B/C
+  gruposABC = (patrulhaAtual?.gruposABC && typeof patrulhaAtual.gruposABC === "object")
+    ? { ...patrulhaAtual.gruposABC }
+    : {};
+
+  // segurança: se comandante não está mais na composição, limpa
   if (comandanteRe && !composicaoRe.includes(String(comandanteRe))) {
     comandanteRe = "";
   }
+
+  // segurança: remove grupos de RE que não estão mais na composição
+  Object.keys(gruposABC).forEach((re) => {
+    if (!composicaoRe.includes(String(re))) delete gruposABC[re];
+  });
 
   renderizarComposicao();
   renderizarListaPms();
@@ -438,7 +552,7 @@ async function adicionarSelecionados() {
   });
 
   try {
-    await salvarComposicaoPatrulha(composicaoRe, comandanteRe);
+    await salvarDadosPatrulha(composicaoRe, comandanteRe, gruposABC);
 
     aplicarPatrulhaNaTela();
 
@@ -470,8 +584,11 @@ async function removerSelecionadosDaComposicao() {
     comandanteRe = "";
   }
 
+  // remove grupos dos removidos
+  remover.forEach((re) => delete gruposABC[String(re)]);
+
   try {
-    await salvarComposicaoPatrulha(composicaoRe, comandanteRe);
+    await salvarDadosPatrulha(composicaoRe, comandanteRe, gruposABC);
     aplicarPatrulhaNaTela();
   } catch (err) {
     console.error(err);
