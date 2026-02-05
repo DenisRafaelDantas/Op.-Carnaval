@@ -111,9 +111,9 @@ body {
 @media (min-width: 768px) {
 
   .brasao-4bpmm {
-    max-height: 100px;
+    max-height: 80px;
   }
   .brasao-pmesp {
-    max-height: 80px;
+    max-height: 60px;
   }
 }
