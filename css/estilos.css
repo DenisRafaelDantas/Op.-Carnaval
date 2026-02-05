@@ -108,7 +108,7 @@ body {
   padding-right: 0.25rem; /* respiro para a barra de rolagem */
 }
 
-@media (min-width: 768px) {
+@media (min-width: 512px) {
 
   .brasao-4bpmm {
     max-height: 80px;
