@@ -196,7 +196,7 @@ function encontrarPatrulhaDoReNaData(re, dataISO, patrulhas) {
   const reSessao = normalizarRe(sessionStorage.getItem("opCarnaval_reAtual"));
   const re = reUrl || reSessao;
 
-  const dataISO = String(params.get("data") || "").trim(); // ✅ obrigatório no novo fluxo
+  const dataISO = String(params.get("data") || "").trim(); // ✅ novo fluxo
 
   badgeRe.textContent = re ? `RE ${re}` : "RE --";
 
