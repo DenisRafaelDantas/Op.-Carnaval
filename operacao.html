@@ -62,8 +62,18 @@
             <!-- Horário da escala -->
             <div class="mb-3">
               <div class="fw-semibold">Horário da Escala</div>
+
+              <!-- ✅ data + horário (preenchido via JS) -->
               <div id="txtHorario" class="fs-6">
+                --/--/----
+                <br>
                 das --:-- às --:--
+              </div>
+
+              <!-- ✅ NOVO: Local e Revista logo abaixo -->
+              <div class="text-body-secondary small mt-2">
+                <div><span class="fw-semibold">Local:</span> <span id="txtLocal">--</span></div>
+                <div><span class="fw-semibold">Revista:</span> <span id="txtRevista">--</span></div>
               </div>
             </div>
 
@@ -84,8 +94,6 @@
                 Nenhum policial vinculado a esta patrulha.
               </p>
             </div>
-
-
 
             <!-- CPP -->
             <div class="mb-3">

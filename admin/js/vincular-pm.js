@@ -1,8 +1,9 @@
 /* =========================
    Admin • Vincular PM à Patrulha (Firestore)
-   - Agora a DATA/HORA pertencem à patrulha (cadastro da patrulha)
-   - Aqui apenas montamos a COMPOSIÇÃO
+   - DATA/HORA pertencem à patrulha (cadastro da patrulha)
+   - Aqui montamos a COMPOSIÇÃO
    - Disponibilidade é calculada por DATA da patrulha
+   - ✅ NOVO: Selecionar Comandante (um RE) e destacar em vermelho
    ========================= */
 
 import {
@@ -98,7 +99,8 @@ const PESO_POSTO = new Map([
   ["3 SGT", 20], ["3º SGT", 20], ["3SGT", 20], ["TERCEIRO SARGENTO", 20],
   ["CB", 10], ["CABO", 10],
   ["SD", 1], ["SOLDADO", 1],
-  ["SD 2 CL", 0], ["SD 2ª CL", 0], ["SD 2A CL", 0], ["SOLDADO 2 CLASSE", 0], ["SOLDADO 2ª CLASSE", 0]
+  ["SD 2 CL", 0], ["SD 2ª CL", 0], ["SD 2A CL", 0],
+  ["SOLDADO 2 CLASSE", 0], ["SOLDADO 2ª CLASSE", 0]
 ]);
 
 function pesoPosto(pm) {
@@ -131,14 +133,22 @@ let patrulhaAtual = null;
 let patrulhasTodas = [];
 let pms = [];
 let composicaoRe = [];
+let comandanteRe = ""; // ✅ novo
 
 /* =========================
    Persistência (Firestore)
-   - Agora salva APENAS a composição
+   - Salva composição + comandante
    ========================= */
-async function salvarComposicaoPatrulha(composicao) {
+async function salvarComposicaoPatrulha(composicao, comandante) {
+  const comp = Array.isArray(composicao) ? composicao : [];
+  const cmd = String(comandante || "").trim();
+
+  // segurança: comandante precisa existir na composição, senão limpa
+  const cmdFinal = (cmd && comp.map(String).includes(String(cmd))) ? cmd : "";
+
   await atualizarPatrulhaFS(idPatrulha, {
-    composicaoRe: Array.isArray(composicao) ? composicao : [],
+    composicaoRe: comp,
+    comandanteRe: cmdFinal,
     atualizadoEm: new Date().toISOString()
   });
 
@@ -199,7 +209,8 @@ function renderizarListaPms() {
   const dataISO = dataDaPatrulhaAtualISO();
 
   if (!dataISO) {
-    statusLista.textContent = "Esta patrulha ainda não tem DATA cadastrada. Volte no cadastro da patrulha e preencha a data.";
+    statusLista.textContent =
+      "Esta patrulha ainda não tem DATA cadastrada. Volte no cadastro da patrulha e preencha a data.";
     return;
   }
 
@@ -226,7 +237,8 @@ function renderizarListaPms() {
     disponiveis = disponiveis.filter((pm) => String(pm.re) === reFiltro);
     statusLista.textContent = `Data ${formatarDataBR(dataISO)} • Filtrando por RE: ${reFiltro}`;
   } else {
-    statusLista.textContent = `Data ${formatarDataBR(dataISO)} • Mostrando apenas PMs disponíveis (não escalados em nenhuma patrulha nesta data).`;
+    statusLista.textContent =
+      `Data ${formatarDataBR(dataISO)} • Mostrando apenas PMs disponíveis (não escalados em nenhuma patrulha nesta data).`;
   }
 
   if (disponiveis.length === 0) {
@@ -273,7 +285,7 @@ function renderizarListaPms() {
 }
 
 /* =========================
-   Renderização • Composição
+   Renderização • Composição (com CMD)
    ========================= */
 function renderizarComposicao() {
   listaComposicao.innerHTML = "";
@@ -287,28 +299,90 @@ function renderizarComposicao() {
 
   const mapPms = new Map(pms.map((pm) => [String(pm.re), pm]));
 
+  // Container estilo list-group (fica bonito e fácil de colorir)
+  const ul = document.createElement("div");
+  ul.className = "list-group";
+
   composicaoRe.forEach((re) => {
     const pm = mapPms.get(String(re));
+    const ehCmd = String(comandanteRe || "") === String(re);
 
-    const item = document.createElement("div");
-    item.className = "d-flex align-items-center gap-2 py-2 border-bottom";
+    const linha = document.createElement("div");
+    linha.className = "list-group-item d-flex align-items-center justify-content-between gap-2";
 
-    const check = document.createElement("input");
-    check.type = "checkbox";
-    check.className = "form-check-input";
-    check.id = `remPm_${re}`;
-    check.dataset.re = String(re);
+    // ✅ comandante em vermelho
+    if (ehCmd) linha.classList.add("list-group-item-danger");
+
+    // ESQUERDA: remover checkbox + nome
+    const esquerda = document.createElement("div");
+    esquerda.className = "d-flex align-items-center gap-2";
+
+    const checkRemover = document.createElement("input");
+    checkRemover.type = "checkbox";
+    checkRemover.className = "form-check-input";
+    checkRemover.id = `remPm_${re}`;
+    checkRemover.dataset.re = String(re);
 
     const texto = document.createElement("label");
     texto.className = "form-check-label";
-    texto.setAttribute("for", check.id);
+    texto.setAttribute("for", checkRemover.id);
     texto.textContent = pm ? textoPm(pm) : `${re} - (PM não encontrado no cadastro)`;
 
-    item.appendChild(check);
-    item.appendChild(texto);
+    esquerda.appendChild(checkRemover);
+    esquerda.appendChild(texto);
 
-    listaComposicao.appendChild(item);
+    // DIREITA: checkbox CMD (apenas um por vez)
+    const direita = document.createElement("div");
+    direita.className = "d-flex align-items-center gap-2";
+
+    const cmdId = `cmd_${re}`;
+
+    const checkCmd = document.createElement("input");
+    checkCmd.type = "checkbox"; // ✅ pedido “check”
+    checkCmd.className = "form-check-input";
+    checkCmd.id = cmdId;
+    checkCmd.dataset.re = String(re);
+    checkCmd.checked = ehCmd;
+
+    const lblCmd = document.createElement("label");
+    lblCmd.className = "form-check-label small";
+    lblCmd.setAttribute("for", cmdId);
+    lblCmd.textContent = "CMD";
+
+    // quando marcar um, desmarca todos os outros e define comandanteRe
+    checkCmd.addEventListener("change", async () => {
+      if (checkCmd.checked) {
+        comandanteRe = String(re);
+
+        // desmarca os outros
+        const outros = listaComposicao.querySelectorAll('input[type="checkbox"][id^="cmd_"]');
+        outros.forEach((el) => {
+          if (el !== checkCmd) el.checked = false;
+        });
+      } else {
+        // se desmarcou o próprio comandante, limpa
+        if (String(comandanteRe) === String(re)) comandanteRe = "";
+      }
+
+      // salva imediatamente (pra não perder)
+      try {
+        await salvarComposicaoPatrulha(composicaoRe, comandanteRe);
+        aplicarPatrulhaNaTela(); // repinta vermelho certinho
+      } catch (e) {
+        console.error(e);
+        alert("Falha ao salvar o comandante no Firebase.");
+      }
+    });
+
+    direita.appendChild(lblCmd);
+    direita.appendChild(checkCmd);
+
+    linha.appendChild(esquerda);
+    linha.appendChild(direita);
+    ul.appendChild(linha);
   });
+
+  listaComposicao.appendChild(ul);
 }
 
 /* =========================
@@ -325,6 +399,13 @@ function aplicarPatrulhaNaTela() {
   composicaoRe = Array.isArray(patrulhaAtual?.composicaoRe)
     ? patrulhaAtual.composicaoRe.map(String)
     : [];
+
+  comandanteRe = String(patrulhaAtual?.comandanteRe || "").trim();
+
+  // segurança: se comandante não está mais na composição, limpa em memória
+  if (comandanteRe && !composicaoRe.includes(String(comandanteRe))) {
+    comandanteRe = "";
+  }
 
   renderizarComposicao();
   renderizarListaPms();
@@ -357,9 +438,8 @@ async function adicionarSelecionados() {
   });
 
   try {
-    await salvarComposicaoPatrulha(composicaoRe);
+    await salvarComposicaoPatrulha(composicaoRe, comandanteRe);
 
-    // Reaplica por segurança
     aplicarPatrulhaNaTela();
 
     checks.forEach((c) => (c.checked = false));
@@ -385,8 +465,13 @@ async function removerSelecionadosDaComposicao() {
 
   composicaoRe = composicaoRe.filter((re) => !remover.includes(String(re)));
 
+  // se removeu o comandante, limpa
+  if (comandanteRe && remover.includes(String(comandanteRe))) {
+    comandanteRe = "";
+  }
+
   try {
-    await salvarComposicaoPatrulha(composicaoRe);
+    await salvarComposicaoPatrulha(composicaoRe, comandanteRe);
     aplicarPatrulhaNaTela();
   } catch (err) {
     console.error(err);

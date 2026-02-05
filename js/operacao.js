@@ -6,7 +6,8 @@
    - Encontra patrulha onde:
        patrulha.dataEscala === dataISO  E
        patrulha.composicaoRe contém o RE
-   - Exibe: horário (da patrulha), patrulha, composição, CPP, missão e mapa
+   - Exibe: data/horário, local, revista, patrulha, composição, CPP, missão e mapa
+   - ✅ NOVO: Comandante (comandanteRe) fica em vermelho
    ========================= */
 
 import { lerPatrulhasFS, lerPmsFS } from "./repositorio-firestore.js";
@@ -18,6 +19,9 @@ const mensagem = document.getElementById("mensagem");
 const conteudo = document.getElementById("conteudo");
 
 const txtHorario = document.getElementById("txtHorario");
+const txtLocal = document.getElementById("txtLocal");
+const txtRevista = document.getElementById("txtRevista");
+
 const txtPatrulha = document.getElementById("txtPatrulha");
 const txtCpp = document.getElementById("txtCpp");
 const txtMissao = document.getElementById("txtMissao");
@@ -147,6 +151,7 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
   msgSemComposicao.classList.add("d-none");
 
   const composicao = Array.isArray(patrulha?.composicaoRe) ? patrulha.composicaoRe : [];
+  const comandanteRe = String(patrulha?.comandanteRe || "").trim(); // ✅ novo
 
   if (composicao.length === 0) {
     msgSemComposicao.classList.remove("d-none");
@@ -168,13 +173,23 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
   const ordenados = ordenarComposicaoPorAntiguidade(itens);
 
   ordenados.forEach((item) => {
+    const ehCmd = comandanteRe && String(item.re) === String(comandanteRe);
+
     const texto = item.existe
       ? `${postoPreferido({ postoGraduacao: item.postoGraduacao })} ${item.re} – ${item.nomeExibir}`
       : `RE ${item.re} – (não encontrado no cadastro)`;
 
     const li = document.createElement("li");
     li.className = "list-group-item";
-    li.textContent = texto;
+
+    // ✅ comandante em vermelho
+    if (ehCmd) {
+      li.classList.add("list-group-item-danger", "fw-semibold");
+      li.textContent = `${texto} (CMD)`;
+    } else {
+      li.textContent = texto;
+    }
+
     listaComposicaoPatrulha.appendChild(li);
   });
 }
@@ -253,8 +268,10 @@ function textoHorario(hIni, hFim) {
     })();
 
     // data em cima + horário embaixo
-    txtHorario.textContent = `${dataBR}\n${textoHorario(hi, hf)}`;
+    txtHorario.innerHTML = `${dataBR}<br>${textoHorario(hi, hf)}`;
 
+    if (txtLocal) txtLocal.textContent = patrulha.local || "--";
+    if (txtRevista) txtRevista.textContent = patrulha.revista || "--";
 
     txtPatrulha.textContent = `Patrulha ${patrulha.numero || "--"}`;
 
