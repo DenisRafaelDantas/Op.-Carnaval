@@ -10,7 +10,7 @@
    - ✅ NOVO: Comandante (comandanteRe) fica em vermelho
    ========================= */
 
-import { lerPatrulhasFS, lerPmsFS } from "./repositorio-firestore.js";
+import { lerPatrulhaDoReNaDataFS, lerPmPorReFS } from "./repositorio-firestore.js";
 
 /* Elementos da tela */
 const badgeRe = document.getElementById("badgeRe");
@@ -276,14 +276,24 @@ function textoHorario(hIni, hFim) {
   }
 
   try {
-    const [patrulhas, pms] = await Promise.all([
-      lerPatrulhasFS(),
-      lerPmsFS()
-    ]);
+    // ✅ OTIMIZAÇÃO: evita ler TODAS as patrulhas e TODOS os PMs
+    // 1) lê apenas as patrulhas da data (muito menos docs)
+    // 2) encontra a patrulha do RE nessa data
+    const patrulha = await lerPatrulhaDoReNaDataFS(re, dataISO);
 
-    const patrulha = encontrarPatrulhaDoReNaData(re, dataISO, patrulhas);
-
-    if (!patrulha) {
+    // 3) carrega apenas os PMs que estão na composição (poucas leituras)
+    const composicao = Array.isArray(patrulha?.composicaoRe) ? patrulha.composicaoRe.map(String) : [];
+    const pms = await Promise.all(
+      composicao.map(async (reItem) => {
+        try {
+          const pm = await lerPmPorReFS(reItem);
+          return pm ? { ...pm, re: String(reItem) } : null;
+        } catch {
+          return null;
+        }
+      })
+    ).then((arr) => arr.filter(Boolean));
+if (!patrulha) {
       mostrarMensagem("Não foi encontrada escala vinculada para este RE na data selecionada.");
       return;
     }
