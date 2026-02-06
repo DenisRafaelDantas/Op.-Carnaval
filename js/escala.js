@@ -8,7 +8,7 @@
    - Ordena por datas mais próximas primeiro
    ========================= */
 
-import { lerPatrulhasFS } from "./repositorio-firestore.js";
+import { lerPatrulhasDoReFS } from "./repositorio-firestore.js";
 
 /* Elementos */
 const badgeRe = document.getElementById("badgeRe");
@@ -190,7 +190,7 @@ function renderizarLista(datas, re) {
   }
 
   try {
-    const patrulhas = await lerPatrulhasFS();
+    const patrulhas = await lerPatrulhasDoReFS(re);
 
     let datas = coletarDatasDoReEmPatrulhas(re, patrulhas);
 

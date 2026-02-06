@@ -152,6 +152,11 @@ function aplicarVinculo(patrulha, cmd) {
   if (!Array.isArray(patrulha.composicaoRe)) patrulha.composicaoRe = [];
   if (typeof patrulha.gruposABC !== "object" || patrulha.gruposABC === null) patrulha.gruposABC = {};
 
+  // ✅ NOVO: guarda dados mínimos para a tela do PM (reduz leituras)
+  if (typeof patrulha.composicaoDetalhada !== "object" || patrulha.composicaoDetalhada === null) {
+    patrulha.composicaoDetalhada = {};
+  }
+
   if (cmd.ehComandante) {
     patrulha.comandanteRe = re;
   }
@@ -162,6 +167,16 @@ function aplicarVinculo(patrulha, cmd) {
 
   // discriminação de grupo
   if (gp) patrulha.gruposABC[re] = gp;
+
+  // dados mínimos do PM (quando disponível)
+  if (cmd.pm) {
+    patrulha.composicaoDetalhada[re] = {
+      postoGraduacao: String(cmd.pm?.postoGraduacao || "").trim(),
+      nomeGuerra: String(cmd.pm?.nomeGuerra || "").trim(),
+      nomeCompleto: String(cmd.pm?.nomeCompleto || "").trim(),
+      nomeExibir: String((cmd.pm?.nomeGuerra || cmd.pm?.nomeCompleto || "")).trim()
+    };
+  }
 }
 
 
@@ -252,6 +267,9 @@ async function executarAtualizacao() {
       continue;
     }
 
+    // ✅ NOVO: anexa dados do PM (para compor composicaoDetalhada)
+    cmd.pm = pmsPorRe.get(cmd.re);
+
     if (cmd.ehComandante) {
       idxPatrulhaAtual++;
 
@@ -303,6 +321,7 @@ async function executarAtualizacao() {
     const payload = {
       composicaoRe: Array.isArray(p.composicaoRe) ? p.composicaoRe : [],
       gruposABC: (typeof p.gruposABC === "object" && p.gruposABC) ? p.gruposABC : {},
+      composicaoDetalhada: (typeof p.composicaoDetalhada === "object" && p.composicaoDetalhada) ? p.composicaoDetalhada : {},
       // se você já usa comandanteRe no app (comandante vermelho), isso vai encaixar.
       comandanteRe: p.comandanteRe || ""
     };

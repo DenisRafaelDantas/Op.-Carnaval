@@ -160,10 +160,35 @@ async function salvarDadosPatrulha(comp, cmd, grupos) {
     if (v === "A" || v === "B" || v === "C") gruposFinal[re] = v;
   });
 
+  /* =========================================================
+     ✅ NOVO: composiçãoDetalhada (para reduzir leituras no app do PM)
+     - Guarda dados mínimos para exibir a composição sem ler toda a coleção "pms"
+     - Chave: RE
+     - Valor: { postoGraduacao, nomeGuerra, nomeCompleto, nomeExibir }
+     ========================================================= */
+  const mapPms = new Map((Array.isArray(pms) ? pms : []).map((pm) => [String(pm.re), pm]));
+  const composicaoDetalhadaFinal = {};
+
+  composicao.forEach((re) => {
+    const pm = mapPms.get(String(re));
+    if (!pm) return;
+
+    composicaoDetalhadaFinal[String(re)] = {
+      postoGraduacao: String(pm?.postoGraduacao || "").trim(),
+      nomeGuerra: String(pm?.nomeGuerra || "").trim(),
+      nomeCompleto: String(pm?.nomeCompleto || "").trim(),
+      nomeExibir: String(nomeExibicao(pm) || "").trim()
+    };
+  });
+
   await atualizarPatrulhaFS(idPatrulha, {
     composicaoRe: composicao,
     comandanteRe: comandanteFinal,
     gruposABC: gruposFinal,
+
+    // ✅ reduz leituras na tela do PM
+    composicaoDetalhada: composicaoDetalhadaFinal,
+
     atualizadoEm: new Date().toISOString()
   });
 
@@ -171,7 +196,6 @@ async function salvarDadosPatrulha(comp, cmd, grupos) {
   patrulhasTodas = await lerPatrulhasFS();
   patrulhaAtual = await lerPatrulhaPorIdFS(idPatrulha);
 }
-
 /* =========================
    Disponibilidade por DATA da patrulha
    ========================= */

@@ -10,7 +10,7 @@
    - ✅ NOVO: Comandante (comandanteRe) fica em vermelho
    ========================= */
 
-import { lerPatrulhasFS, lerPmsFS } from "./repositorio-firestore.js";
+import { lerPatrulhaDoReNaDataFS, lerPmPorReFS } from "./repositorio-firestore.js";
 
 /* Elementos da tela */
 const badgeRe = document.getElementById("badgeRe");
@@ -144,7 +144,7 @@ function postoPreferido(pm) {
 }
 
 /* Renderiza composição (modelo novo: patrulha.composicaoRe) */
-function renderizarComposicaoDaPatrulha(patrulha, pms) {
+function renderizarComposicaoDaPatrulha(patrulha, pmsFallback) {
   if (!listaComposicaoPatrulha || !msgSemComposicao) return;
 
   listaComposicaoPatrulha.innerHTML = "";
@@ -153,9 +153,14 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
   const composicao = Array.isArray(patrulha?.composicaoRe) ? patrulha.composicaoRe : [];
   const comandanteRe = String(patrulha?.comandanteRe || "").trim();
 
-  // ✅ NOVO: grupos ABC (objeto: { "123456": "A", ... })
+  // ✅ grupos ABC (objeto: { "123456": "A", ... })
   const gruposABC = (patrulha?.gruposABC && typeof patrulha.gruposABC === "object")
     ? patrulha.gruposABC
+    : {};
+
+  // ✅ NOVO: dados mínimos já salvos na patrulha (reduz leituras)
+  const detalhes = (patrulha?.composicaoDetalhada && typeof patrulha.composicaoDetalhada === "object")
+    ? patrulha.composicaoDetalhada
     : {};
 
   if (composicao.length === 0) {
@@ -163,23 +168,35 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
     return;
   }
 
-  const mapPms = new Map((Array.isArray(pms) ? pms : []).map((pm) => [String(pm.re), pm]));
+  // fallback opcional: se não houver detalhes, usa pmsFallback (carregado por getDoc)
+  const mapPmsFallback = new Map((Array.isArray(pmsFallback) ? pmsFallback : []).map((pm) => [String(pm.re), pm]));
 
   const itens = composicao.map((re) => {
-    const pm = mapPms.get(String(re));
+    const r = String(re);
+    const det = detalhes?.[r];
+    const pmFallback = mapPmsFallback.get(r);
+
+    const postoGraduacao = String(det?.postoGraduacao || pmFallback?.postoGraduacao || "").trim();
+
+    const nomeExibir = String(
+      det?.nomeExibir
+      || det?.nomeGuerra
+      || det?.nomeCompleto
+      || (pmFallback ? nomePreferido(pmFallback) : "(não encontrado no cadastro)")
+    ).trim();
+
     return {
-      re: String(re),
-      postoGraduacao: pm?.postoGraduacao || "",
-      nomeExibir: pm ? nomePreferido(pm) : "(não encontrado no cadastro)",
-      existe: Boolean(pm),
+      re: r,
+      postoGraduacao,
+      nomeExibir,
+      existe: Boolean(det || pmFallback),
       // ✅ pega o grupo (A/B/C) se existir
-      grupo: String(gruposABC?.[String(re)] || "").toUpperCase().trim()
+      grupo: String(gruposABC?.[r] || "").toUpperCase().trim()
     };
   });
 
   const ordenados = ordenarComposicaoPorAntiguidade(itens);
 
-  // ✅ Cabeçalho (opcional, mas fica bem claro)
   const header = document.createElement("li");
   header.className = "list-group-item";
   header.innerHTML = `
@@ -197,7 +214,6 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
       ? `${postoPreferido({ postoGraduacao: item.postoGraduacao })} ${item.re} – ${item.nomeExibir}`
       : `RE ${item.re} – (não encontrado no cadastro)`;
 
-    // grupo validado
     const grupo = (item.grupo === "A" || item.grupo === "B" || item.grupo === "C")
       ? item.grupo
       : "--";
@@ -205,12 +221,10 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
     const li = document.createElement("li");
     li.className = "list-group-item";
 
-    // ✅ comandante em vermelho (como já estava)
     if (ehCmd) {
       li.classList.add("list-group-item-danger", "fw-semibold");
     }
 
-    // ✅ 2 colunas: nome | grupo
     li.innerHTML = `
       <div class="d-flex align-items-center justify-content-between gap-3">
         <div class="text-break">
@@ -225,6 +239,7 @@ function renderizarComposicaoDaPatrulha(patrulha, pms) {
     listaComposicaoPatrulha.appendChild(li);
   });
 }
+
 
 
 /* Encontra patrulha do RE NA DATA (modelo novo) */
@@ -276,19 +291,41 @@ function textoHorario(hIni, hFim) {
   }
 
   try {
-    const [patrulhas, pms] = await Promise.all([
-      lerPatrulhasFS(),
-      lerPmsFS()
-    ]);
-
-    const patrulha = encontrarPatrulhaDoReNaData(re, dataISO, patrulhas);
+    // ✅ OTIMIZAÇÃO: evita ler TODAS as patrulhas e TODOS os PMs
+    // 1) lê apenas as patrulhas da data (muito menos docs)
+    // 2) encontra a patrulha do RE nessa data
+    const patrulha = await lerPatrulhaDoReNaDataFS(re, dataISO);
 
     if (!patrulha) {
       mostrarMensagem("Não foi encontrada escala vinculada para este RE na data selecionada.");
       return;
     }
 
-    esconderMensagem();
+    /* =========================================================
+       ✅ Composição sem custo alto:
+       - Se a patrulha já tiver composicaoDetalhada, NÃO lê coleção "pms"
+       - Se não tiver (patrulhas antigas), faz fallback (poucas leituras)
+       ========================================================= */
+    const detalhes = (patrulha?.composicaoDetalhada && typeof patrulha.composicaoDetalhada === "object")
+      ? patrulha.composicaoDetalhada
+      : {};
+
+    let pms = [];
+
+    if (!detalhes || Object.keys(detalhes).length === 0) {
+      const composicao = Array.isArray(patrulha?.composicaoRe) ? patrulha.composicaoRe.map(String) : [];
+      pms = await Promise.all(
+        composicao.map(async (reItem) => {
+          try {
+            const pm = await lerPmPorReFS(reItem);
+            return pm ? { ...pm, re: String(reItem) } : null;
+          } catch {
+            return null;
+          }
+        })
+      ).then((arr) => arr.filter(Boolean));
+    }
+esconderMensagem();
     conteudo.classList.remove("d-none");
 
     const hi = patrulha?.horarioInicio || "--:--";
