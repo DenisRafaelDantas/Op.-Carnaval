@@ -161,8 +161,9 @@ function aplicarVinculo(patrulha, cmd) {
   }
 
   // discriminação de grupo
-  if (gp) patrulha.ABC[re] = gp;
+  if (gp) patrulha.gruposABC[re] = gp;
 }
+
 
 /* =========================================================
    Execução principal
