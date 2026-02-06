@@ -565,7 +565,9 @@ async function adicionarSelecionados() {
 }
 
 async function removerSelecionadosDaComposicao() {
-  const checks = listaComposicao.querySelectorAll('input[type="checkbox"][data-re]');
+  // ✅ CORREÇÃO: pega APENAS os checkboxes de remoção (remPm_*)
+  // Isso evita remover todo mundo quando CMD/Grupo estiver marcado.
+  const checks = listaComposicao.querySelectorAll('input[type="checkbox"][id^="remPm_"]');
   const remover = [];
 
   checks.forEach((c) => {
