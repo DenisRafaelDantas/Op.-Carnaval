@@ -150,7 +150,7 @@ function aplicarVinculo(patrulha, cmd) {
   const gp = String(cmd.gp || "").trim();
 
   if (!Array.isArray(patrulha.composicaoRe)) patrulha.composicaoRe = [];
-  if (typeof patrulha.grupos !== "object" || patrulha.grupos === null) patrulha.grupos = {};
+  if (typeof patrulha.gruposABC !== "object" || patrulha.gruposABC === null) patrulha.gruposABC = {};
 
   if (cmd.ehComandante) {
     patrulha.comandanteRe = re;
@@ -161,7 +161,7 @@ function aplicarVinculo(patrulha, cmd) {
   }
 
   // discriminação de grupo
-  if (gp) patrulha.grupos[re] = gp;
+  if (gp) patrulha.ABC[re] = gp;
 }
 
 /* =========================================================
@@ -301,7 +301,7 @@ async function executarAtualizacao() {
   for (const [id, p] of alteradas.entries()) {
     const payload = {
       composicaoRe: Array.isArray(p.composicaoRe) ? p.composicaoRe : [],
-      grupos: (typeof p.grupos === "object" && p.grupos) ? p.grupos : {},
+      gruposABC: (typeof p.gruposABC === "object" && p.gruposABC) ? p.gruposABC : {},
       // se você já usa comandanteRe no app (comandante vermelho), isso vai encaixar.
       comandanteRe: p.comandanteRe || ""
     };
