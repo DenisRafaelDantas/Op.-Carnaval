@@ -122,3 +122,29 @@ body {
 #txtMissao {
   white-space: pre-line; /* mantém \n como quebra, e colapsa espaços extras */
 }
+
+
+/* =========================
+   Layout com rodapé fixo ao fundo
+   ========================= */
+html, body {
+  height: 100%;
+}
+
+body.layout-pagina {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* main cresce e empurra o rodapé para baixo */
+body.layout-pagina main {
+  flex: 1 0 auto;
+}
+
+/* Rodapé sempre colado no fundo */
+.rodape-institucional {
+  flex-shrink: 0;
+  padding: 1rem 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
