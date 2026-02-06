@@ -139,6 +139,7 @@ function ordenarComposicaoPorAntiguidade(itens) {
 function nomePreferido(pm) {
   return pm?.nomeGuerra?.trim() || pm?.nomeCompleto?.trim() || "(Sem nome)";
 }
+
 function postoPreferido(pm) {
   return pm?.postoGraduacao?.trim() || "--";
 }
@@ -158,7 +159,7 @@ function renderizarComposicaoDaPatrulha(patrulha, pmsFallback) {
     ? patrulha.gruposABC
     : {};
 
-  // ✅ NOVO: dados mínimos já salvos na patrulha (reduz leituras)
+  // ✅ dados mínimos já salvos na patrulha (reduz leituras)
   const detalhes = (patrulha?.composicaoDetalhada && typeof patrulha.composicaoDetalhada === "object")
     ? patrulha.composicaoDetalhada
     : {};
@@ -197,6 +198,7 @@ function renderizarComposicaoDaPatrulha(patrulha, pmsFallback) {
 
   const ordenados = ordenarComposicaoPorAntiguidade(itens);
 
+  // Cabeçalho (deixa claro as colunas)
   const header = document.createElement("li");
   header.className = "list-group-item";
   header.innerHTML = `
@@ -221,6 +223,7 @@ function renderizarComposicaoDaPatrulha(patrulha, pmsFallback) {
     const li = document.createElement("li");
     li.className = "list-group-item";
 
+    // ✅ comandante em vermelho
     if (ehCmd) {
       li.classList.add("list-group-item-danger", "fw-semibold");
     }
@@ -237,22 +240,6 @@ function renderizarComposicaoDaPatrulha(patrulha, pmsFallback) {
     `;
 
     listaComposicaoPatrulha.appendChild(li);
-  });
-}
-
-
-
-/* Encontra patrulha do RE NA DATA (modelo novo) */
-function encontrarPatrulhaDoReNaData(re, dataISO, patrulhas) {
-  const reStr = String(re);
-  const dataStr = String(dataISO || "").trim();
-
-  return (Array.isArray(patrulhas) ? patrulhas : []).find((p) => {
-    const d = String(p?.dataEscala || "").trim();
-    if (d !== dataStr) return false;
-
-    const comp = Array.isArray(p?.composicaoRe) ? p.composicaoRe : [];
-    return comp.map(String).includes(reStr);
   });
 }
 
@@ -291,9 +278,7 @@ function textoHorario(hIni, hFim) {
   }
 
   try {
-    // ✅ OTIMIZAÇÃO: evita ler TODAS as patrulhas e TODOS os PMs
-    // 1) lê apenas as patrulhas da data (muito menos docs)
-    // 2) encontra a patrulha do RE nessa data
+    // ✅ OTIMIZAÇÃO: busca apenas a patrulha do RE na data (sem ler coleções inteiras)
     const patrulha = await lerPatrulhaDoReNaDataFS(re, dataISO);
 
     if (!patrulha) {
@@ -313,7 +298,10 @@ function textoHorario(hIni, hFim) {
     let pms = [];
 
     if (!detalhes || Object.keys(detalhes).length === 0) {
-      const composicao = Array.isArray(patrulha?.composicaoRe) ? patrulha.composicaoRe.map(String) : [];
+      const composicao = Array.isArray(patrulha?.composicaoRe)
+        ? patrulha.composicaoRe.map(String)
+        : [];
+
       pms = await Promise.all(
         composicao.map(async (reItem) => {
           try {
@@ -325,7 +313,8 @@ function textoHorario(hIni, hFim) {
         })
       ).then((arr) => arr.filter(Boolean));
     }
-esconderMensagem();
+
+    esconderMensagem();
     conteudo.classList.remove("d-none");
 
     const hi = patrulha?.horarioInicio || "--:--";
