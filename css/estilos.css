@@ -117,3 +117,8 @@ body {
     max-height: 80px;
   }
 }
+
+/* Preserva quebras de linha digitadas (ENTER) */
+#txtMissao {
+  white-space: pre-line; /* mantém \n como quebra, e colapsa espaços extras */
+}
