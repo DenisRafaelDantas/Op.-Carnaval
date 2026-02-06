@@ -89,7 +89,7 @@ body {
 
 /* “Sobe” o iframe para esconder a faixa */
 .mapa-preview {
-  width: 350px;
+  width: 320px;
   height: 380px;             
   border: 0;
   position: relative;
