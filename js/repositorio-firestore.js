@@ -10,7 +10,8 @@ import {
   deleteDoc,
   addDoc,
   query,
-  where
+  where,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
 
 /* =========================
@@ -306,3 +307,36 @@ export async function excluirPmPorReFS(re) {
     throw e;
   }
 }
+
+/* =========================
+   PRESENÇA (operação)
+   - Cria presença por (dataISO + RE)
+   - Se já existir, não altera
+   ========================= */
+
+export async function registrarPresencaFS({ re, dataISO, codigoDispositivo,  }) {
+  const reLimpo = String(re || "").replace(/\D/g, "").slice(0, 6);
+  const data = String(dataISO || "").trim();
+
+  if (!reLimpo) throw new Error("RE inválido para registrar presença.");
+  if (!data) throw new Error("dataISO inválida para registrar presença.");
+
+  const id = `${data}_${reLimpo}`;
+  const ref = doc(db, "presencas", id);
+
+  // Regra: NÃO ALTERAR se já existe
+  const snap = await getDoc(ref);
+  if (snap.exists()) return { ok: true, jaExistia: true, id };
+
+  // Cria (primeiro acesso do dia)
+  await setDoc(ref, {
+    re: reLimpo,
+    dataISO: data,
+    criadoEm: serverTimestamp(),
+    criadoEmLocal: Date.now(),
+    codigoDispositivo: String(codigoDispositivo || "")
+  });
+
+  return { ok: true, jaExistia: false, id };
+}
+

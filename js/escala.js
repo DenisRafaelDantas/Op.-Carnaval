@@ -8,7 +8,7 @@
    - Ordena por datas mais próximas primeiro
    ========================= */
 
-import { lerPatrulhasDoReFS } from "./repositorio-firestore.js";
+import { lerPatrulhasDoReFS, registrarPresencaFS } from "./repositorio-firestore.js";
 
 /* Elementos */
 const badgeRe = document.getElementById("badgeRe");
@@ -111,6 +111,25 @@ function coletarDatasDoReEmPatrulhas(re, patrulhas) {
   return resultados;
 }
 
+function obterOuCriarCodigoDispositivo() {
+  const chave = "opCarnaval_codigoDispositivo";
+  let codigo = localStorage.getItem(chave);
+
+  if (!codigo) {
+    // Chrome/Android/PC modernos suportam isso
+    if (crypto && typeof crypto.randomUUID === "function") {
+      codigo = crypto.randomUUID();
+    } else {
+      // fallback simples
+      codigo = `dev_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    }
+    localStorage.setItem(chave, codigo);
+  }
+
+  return codigo;
+}
+
+
 /* Render da lista */
 function renderizarLista(datas, re) {
   listaDatas.innerHTML = "";
@@ -130,6 +149,26 @@ function renderizarLista(datas, re) {
 
     const a = document.createElement("a");
     a.href = `operacao.html?re=${encodeURIComponent(re)}&data=${encodeURIComponent(item.dataISO)}`;
+        // ✅ Presença: só quando for HOJE e o PM clicar para abrir a operação
+    if (ehHoje) {
+      a.addEventListener("click", async (ev) => {
+        ev.preventDefault();
+
+        try {
+          await registrarPresencaFS({
+            re,
+            dataISO: item.dataISO,
+            codigoDispositivo: obterOuCriarCodigoDispositivo()
+          });
+        } catch (e) {
+          // Não bloqueia a operação se falhar, só registra no console
+          console.error("Falha ao registrar presença:", e);
+        } finally {
+          window.location.href = a.href;
+        }
+      });
+    }
+
     a.className = "list-group-item list-group-item-action d-flex align-items-center justify-content-between";
 
     if (ehHoje) a.classList.add("border", "border-primary");
