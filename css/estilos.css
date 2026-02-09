@@ -2,64 +2,68 @@
    Estilos globais da página
    ========================= */
 
-/* ✅ IMPORTANTE: mantemos o fundo no body, mas agora o body também pode virar flex
-   quando você usar class="layout-pagina" no <body>. */
 body {
   background: #474747;
 }
 
-/* Controla a largura máxima do conteúdo central para não “esticar” demais no desktop */
+/* ✅ BASE: controla largura do conteúdo central
+   - Mobile: ocupa quase tudo
+   - Desktop: fica mais largo pra comportar grid
+*/
 .conteudo-largura {
-  max-width: 460px; /* largura enxuta e elegante */
+  width: 100%;
+  max-width: 1100px;   /* ✅ antes era 460px (apertava demais no PC) */
+}
+
+/* ✅ Para manter o card do RE "enxuto e elegante", use esta classe no HTML
+   (vou te explicar logo abaixo como aplicar sem mudar o layout do resto) */
+.conteudo-largura-estreita {
+  width: 100%;
+  max-width: 460px;
+  height: 100%;
 }
 
 /* =========================
    Estilos dos brasões
    ========================= */
 
-/* Classe base para padronizar comportamento das imagens */
 .brasao {
   display: block;
   height: auto;
-  width: auto;          /* <-- importante: não força 100% */
-  max-width: 100%;      /* garante que não estoura o container */
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
 }
 
-/* Brasão superior (PMESP) */
 .brasao-pmesp {
-  max-width: 100px;     /* tamanho “ideal” no desktop */
-  margin-top: 0%;       /* respiro no topo */
-  margin-bottom: 10px;  /* espaço entre os brasões */
+  max-width: 100px;
+  margin-top: 0%;
+  margin-bottom: 10px;
 }
 
-/* Brasão inferior (4º BPM/M) */
 .brasao-4bpmm {
-  max-width: 100px;     /* tamanho “ideal” no desktop */
-  margin-bottom: 10px;  /* espaço antes do card */
+  max-width: 100px;
+  margin-bottom: 10px;
 }
 
 /* =========================
    Brasões – telas internas
    ========================= */
 
-/* Container dos brasões em telas internas */
 .cabecalho-interno {
-  display: flex;              /* coloca lado a lado */
-  justify-content: space-between; /* centraliza horizontalmente */
-  align-items: center;        /* alinha verticalmente */
-  gap: 16px;                  /* espaço entre os brasões */
-  margin-bottom: 16px;        /* espaço antes do conteúdo */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
-/* Estilo base dos brasões internos */
 .cabecalho-interno .brasao {
   width: auto;
   max-height: 70px;
   margin: 0;
 }
 
-/* Ajuste fino individual */
 .cabecalho-interno .brasao-pmesp {
   max-height: 60px;
 }
@@ -70,14 +74,13 @@ body {
 
 /* =========================
    Prévia do mapa (My Maps)
-   - corta a barra superior
    ========================= */
+
 .mapa-preview-wrapper {
-  overflow: hidden;          /* corta o topo que sair */
+  overflow: hidden;
   border-radius: 0.5rem;
 }
 
-/* “Sobe” o iframe para esconder a faixa */
 .mapa-preview {
   width: 100%;
   height: 380px;
@@ -90,16 +93,70 @@ body {
    Vincular PM • Listas roláveis
    ========================= */
 
-/* Área rolável que não estoura a tela */
 .lista-rolavel {
-  /* ✅ ajuste para mobile moderno (vh bug):
-     usa dvh quando disponível e mantém fallback em vh */
-  max-height: calc(100dvh - 320px);
-  max-height: calc(100vh - 320px);
-
+  max-height: calc(100dvh - 420px);
   overflow-y: auto;
-  padding-right: 0.25rem; /* respiro para a barra de rolagem */
+  padding-right: 0.25rem;
 }
+
+/* Preserva quebras de linha digitadas (ENTER) */
+#txtMissao {
+  white-space: pre-line;
+}
+
+/* =========================
+   Layout com rodapé colado no fundo (mobile-safe)
+   ========================= */
+
+html, body {
+  height: 100%;
+}
+
+body.layout-pagina {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: 100svh;
+}
+
+body.layout-pagina main {
+  flex: 1 0 auto;
+}
+
+.rodape-institucional {
+  flex-shrink: 0;
+  padding: 0.5rem 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* =========================
+   Cards / sombras
+   ========================= */
+
+.card-sombra {
+  /* sombra mais “limpa” e agradável no PC e no mobile */
+  box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.35);
+}
+
+/* Card clicável (efeito botão) */
+.card-botao {
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.card-botao:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.45);
+}
+
+.card-botao:active {
+  transform: translateY(0);
+}
+
+/* =========================
+   Ajustes responsivos
+   ========================= */
 
 @media (min-width: 768px) {
   .brasao-4bpmm {
@@ -110,42 +167,10 @@ body {
   }
 }
 
-/* Preserva quebras de linha digitadas (ENTER) */
-#txtMissao {
-  white-space: pre-line; /* mantém \n como quebra, e colapsa espaços extras */
-}
-
-/* =========================
-   Layout com rodapé colado no fundo (mobile-safe)
-   ========================= */
-html, body {
-  height: 100%;
-}
-
-/* ✅ layout flex só quando você usar <body class="layout-pagina"> */
-body.layout-pagina {
-  display: flex;
-  flex-direction: column;
-
-  /* fallback */
-  min-height: 100vh;
-
-  /* ✅ resolve o “vh bug” no celular (Chrome/Safari/iOS) */
-  min-height: 100dvh; /* dynamic viewport height */
-  min-height: 100svh; /* small viewport height */
-}
-
-/* main cresce e empurra o rodapé para baixo */
-body.layout-pagina main {
-  flex: 1 0 auto;
-}
-
-/* Rodapé sempre colado no fundo */
-.rodape-institucional {
-  flex-shrink: 0;
-
-  /* ✅ CORREÇÃO: vírgula aqui quebrava o padding */
-  padding: 0.5rem 0;
-
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+/* ✅ Em telas grandes, dá um respiro lateral (fica mais bonito) */
+@media (min-width: 992px) {
+  .conteudo-largura {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
 }

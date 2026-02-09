@@ -2,105 +2,193 @@
 <html lang="pt-br">
 
 <head>
-    <!-- Define codificação padrão (acentos etc.) -->
-    <meta charset="utf-8" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Ajuste para responsividade em celular -->
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Operação Carnaval - Consulta por RE</title>
 
-    <!-- Título que aparece na aba do navegador -->
-    <title>Operação Carnaval - Consulta por RE</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
 
-    <!-- Bootstrap CSS (via CDN) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
+  <!-- Bootstrap Icons (ícones) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- CSS do projeto -->
-    <link rel="stylesheet" href="css/estilos.css" />
+  <link rel="stylesheet" href="css/estilos.css" />
 </head>
 
 <body class="layout-pagina">
-    <!-- Container principal (centraliza e dá respiro) -->
-    <main class="container py-4">
-        <!-- Coluna central com largura controlada (fica bonito no desktop e no mobile) -->
-        <div class="mx-auto conteudo-largura">
+  <main class="container py-4">
+    <!-- ✅ aqui a gente controla a largura no desktop -->
+    <div class="mx-auto conteudo-largura">
 
-            <!-- Área dos brasões (alinhados ao topo e centralizados horizontalmente) -->
-            <header class="mb-4 text-center">
-                <img src="img/pmesp.png" class="d-block mx-auto brasao brasao-pmesp"
-                    alt="Brasão da Polícia Militar do Estado de São Paulo" />
+      <header class="mb-4 text-center">
+        <img src="img/pmesp.png" class="d-block mx-auto brasao brasao-pmesp"
+          alt="Brasão da Polícia Militar do Estado de São Paulo" />
+        <img src="img/4bpmm.png" class="d-block mx-auto brasao brasao-4bpmm" alt="Brasão do 4º BPM/M" />
+      </header>
 
-                <img src="img/4bpmm.png" class="d-block mx-auto brasao brasao-4bpmm" alt="Brasão do 4º BPM/M" />
-            </header>
+      <!-- ✅ UM ÚNICO GRID: RE + cards-botão juntos -->
+      <section>
+        <div class="row g-3">
 
+          <!-- ✅ Card RE (vira “card grande” no desktop) -->
+          <div class="col-12 col-lg-6">
+            <section class="card card-sombra h-100">
+              <div class="card-body p-4">
 
-            <!-- Cartão para destacar o formulário -->
-            <section class="card shadow-sm">
-                <!-- Corpo do cartão -->
-                <div class="card-body p-4">
+                <h1 class="h4">Operação Carnaval</h1>
 
-                    <!-- Título do bloco -->
-                    <h1 class="h4">Operação Carnaval</h1>
+                <p class="text-body-secondary mb-4">
+                  Digite seu <strong>RE sem o dígito</strong> para consultar seus dados de escala.
+                </p>
 
-                    <!-- Mensagem orientando o policial -->
-                    <p class="text-body-secondary mb-4">
-                        Digite seu <strong>RE sem o dígito</strong> para consultar seus dados de escala.
-                    </p>
+                <form id="form-re" novalidate>
+                  <div class="mb-3">
+                    <label for="re" class="form-label">RE (6 dígitos)</label>
 
-                    <!-- Formulário (por enquanto só visual/validação local) -->
-                    <form id="form-re" novalidate>
-                        <!-- Grupo do campo -->
-                        <div class="mb-3">
-                            <!-- Rótulo do campo -->
-                            <label for="re" class="form-label">RE (6 dígitos)</label>
+                    <input type="text" class="form-control form-control-lg" id="re" name="re"
+                      placeholder="Ex.: 123456" inputmode="numeric" autocomplete="off" maxlength="6" required
+                      aria-describedby="ajuda-re" />
 
-                            <!-- Campo RE -->
-                            <input type="text" class="form-control form-control-lg" id="re" name="re"
-                                placeholder="Ex.: 123456" inputmode="numeric" autocomplete="off" maxlength="6" required
-                                aria-describedby="ajuda-re" />
+                    <div class="invalid-feedback">
+                      Informe um RE válido com 6 dígitos (somente números).
+                    </div>
+                  </div>
 
-                            <!-- Feedback de validação (Bootstrap) -->
-                            <div class="invalid-feedback">
-                                Informe um RE válido com 6 dígitos (somente números).
-                            </div>
-                        </div>
+                  <button type="submit" id="btn-entrar" class="btn btn-primary btn-lg w-100" disabled>
+                    Entrar
+                  </button>
+                </form>
 
-                        <!-- Botão entrar -->
-                        <button type="submit" id="btn-entrar" class="btn btn-primary btn-lg w-100" disabled>
-                            Entrar
-                        </button>
-                    </form>
-
-                    <!-- Rodapé discreto (opcional, ajuda na organização visual) -->
-                    <p class="text-center text-body-secondary small mt-3 mb-0">
-                        PMESP • Sistema Operação Carnaval
-                    </p>
-                </div>
+                <p class="text-center text-body-secondary small mt-3 mb-0">
+                  PMESP • Sistema Operação Carnaval
+                </p>
+              </div>
             </section>
+          </div>
+
+          <!-- Ordem de Serviço -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <a href="ordem-servico.html" class="text-decoration-none">
+              <div class="card card-sombra h-100 card-botao">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                  <div class="fs-2 text-primary">
+                    <i class="bi bi-file-earmark-text"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold">Ordem de Serviço</div>
+                    <div class="text-body-secondary small">Operação Carnaval</div>
+                  </div>
+                  <div class="text-body-secondary fs-4">
+                    <i class="bi bi-chevron-right"></i>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Resultados -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <a href="resultados.html" class="text-decoration-none">
+              <div class="card card-sombra h-100 card-botao">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                  <div class="fs-2 text-primary">
+                    <i class="bi bi-bar-chart-line"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold">Resultados</div>
+                    <div class="text-body-secondary small">Produtividade e indicadores</div>
+                  </div>
+                  <div class="text-body-secondary fs-4">
+                    <i class="bi bi-chevron-right"></i>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Mapa Paulo VI -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <a href="mapa-paulo-vi.html" class="text-decoration-none">
+              <div class="card card-sombra h-100 card-botao">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                  <div class="fs-2 text-primary">
+                    <i class="bi bi-map"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold">Mapa Paulo VI</div>
+                    <div class="text-body-secondary small">Área / pontos de referência</div>
+                  </div>
+                  <div class="text-body-secondary fs-4">
+                    <i class="bi bi-chevron-right"></i>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Mapa Marquês de São Vicente -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <a href="mapa-marques-sao-vicente.html" class="text-decoration-none">
+              <div class="card card-sombra h-100 card-botao">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                  <div class="fs-2 text-primary">
+                    <i class="bi bi-geo-alt"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold">Mapa Marquês de São Vicente</div>
+                    <div class="text-body-secondary small">Área / rotas principais</div>
+                  </div>
+                  <div class="text-body-secondary fs-4">
+                    <i class="bi bi-chevron-right"></i>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+
+          <!-- Admin -->
+          <div class="col-12 col-md-6 col-lg-3">
+            <a href="admin/index.html" class="text-decoration-none">
+              <div class="card card-sombra h-100 card-botao">
+                <div class="card-body p-4 d-flex align-items-center gap-3">
+                  <div class="fs-2 text-primary">
+                    <i class="bi bi-shield-lock"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <div class="fw-semibold">Admin</div>
+                    <div class="text-body-secondary small">Gestão de efetivo e patrulhas</div>
+                  </div>
+                  <div class="text-body-secondary fs-4">
+                    <i class="bi bi-chevron-right"></i>
+                  </div>
+                </div>
+              </div>
+            </a>
+          </div>
+
         </div>
-    </main>
+      </section>
 
-    <!-- Rodapé institucional -->
-    <footer class="rodape-institucional">
-        <div class="container text-center">
-            <div class="small text-body-secondary">
-                PMESP • 4º BPM/M • 2026
-            </div>
-            <div class="small text-body-secondary">
-                Desenvolvido por: Sd PM 153602-8 Reis
-            </div>
-        </div>
-    </footer>
+    </div>
+  </main>
 
+  <footer class="rodape-institucional">
+    <div class="container text-center">
+      <div class="small text-body-secondary">
+        PMESP • 4º BPM/M • 2026
+      </div>
+      <div class="small text-body-secondary">
+        Desenvolvido por: Sd PM 153602-8 Reis
+      </div>
+    </div>
+  </footer>
 
-    <!-- Bootstrap JS (bundle com Popper) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
 
-    <!-- JS do projeto (separado, boas práticas) -->
-    <script src="js/app.js"></script>
+  <script src="js/app.js"></script>
 </body>
 
 </html>
-<!-- Commit de verificação geral -->

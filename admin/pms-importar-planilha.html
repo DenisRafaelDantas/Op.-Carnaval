@@ -21,16 +21,18 @@
   <link rel="stylesheet" href="../css/estilos.css" />
 </head>
 
-<body>
+<body class="layout-pagina">
   <main class="container py-4">
-    <div class="mx-auto conteudo-largura">
 
-      <header class="cabecalho-interno">
-        <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP" />
-        <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M" />
-      </header>
+    <!-- Cabeçalho interno com brasões nos cantos -->
+    <header class="cabecalho-interno">
+      <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP">
+      <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M">
+    </header>
 
-      <section class="card shadow-sm">
+    <!-- Card do painel -->
+    <div class="d-flex justify-content-center pt-4">
+      <section class="card card-sombra conteudo-largura-estreita">
         <div class="card-body p-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
@@ -84,6 +86,17 @@
       </section>
     </div>
   </main>
+
+  <footer class="rodape-institucional">
+    <div class="container text-center">
+      <div class="small text-body-secondary">
+        PMESP • 4º BPM/M • 2026
+      </div>
+      <div class="small text-body-secondary">
+        Desenvolvido por: Sd PM 153602-8 Reis
+      </div>
+    </div>
+  </footer>
 
   <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

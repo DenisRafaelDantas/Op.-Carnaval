@@ -22,37 +22,34 @@
 <body>
   <!-- Conteúdo principal -->
   <main class="container-fluid py-4">
-    <!-- ✅ Mais largo, mas ainda centralizado e bonito -->
-    <div class="mx-auto px-2 px-md-3" style="max-width: 1200px;">
+    <!-- Cabeçalho com brasões -->
+    <header class="cabecalho-interno">
+      <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="Brasão da PMESP" />
+      <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="Brasão do 4º BPM/M" />
+    </header>
 
-      <!-- Cabeçalho com brasões -->
-      <header class="cabecalho-interno">
-        <!-- Brasão PMESP (canto esquerdo) -->
-        <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="Brasão da PMESP" />
-
-        <!-- Brasão 4º BPM/M (canto direito) -->
-        <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="Brasão do 4º BPM/M" />
-      </header>
-
-      <!-- Card principal -->
-      <section class="card shadow-sm">
+    <!-- Card principal -->
+    <div class="d-flex justify-content-center pt-4">
+      <section class="card card-sombra conteudo-largura-estreita">
         <div class="card-body p-4">
-
-          <!-- Título -->
-          <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
-            <div>
-              <h1 class="h5 mb-1">Vincular PM à Patrulha</h1>
-              <p class="text-body-secondary mb-0">
-                Selecione os policiais que compõem esta patrulha. A data e o horário são definidos no cadastro da patrulha.
-              </p>
-            </div>
-
-            <!-- Identificação da patrulha (preenchida via JS) -->
-            <div class="text-end">
-              <div class="badge text-bg-secondary" id="badgePatrulha">Patrulha --</div>
-              <div class="text-body-secondary small mt-1" id="badgeInfo">Data/Horário: --</div>
-            </div>
+          <div class="d-flex justify-content-between">
+            <h1 class="h5 mb-1">Vincular PM à Patrulha</h1>
+            <button type="button" class="btn btn-secondary" id="btnSair">
+              Voltar
+            </button>
           </div>
+
+          <p class="text-body-secondary mb-0">
+            Selecione os policiais que compõem esta patrulha. A data e o horário são definidos no cadastro da
+            patrulha.
+          </p>
+
+          <!-- Identificação da patrulha (preenchida via JS) -->
+          <div class="text-end">
+            <div class="badge text-bg-secondary" id="badgePatrulha">Patrulha --</div>
+            <div class="text-body-secondary small mt-1" id="badgeInfo">Data/Horário: --</div>
+          </div>
+
 
           <!-- ✅ Layout mais equilibrado -->
           <div class="row g-3">
@@ -72,7 +69,8 @@
 
                 <!-- ✅ legenda curtinha para não confundir -->
                 <div class="text-body-secondary small mb-2">
-                  Marque <strong>CMD</strong> para definir o comandante (apenas 1). Marque <strong>A/B/C</strong> para definir o grupo (apenas 1 por PM).
+                  Marque <strong>CMD</strong> para definir o comandante (apenas 1). Marque <strong>A/B/C</strong> para
+                  definir o grupo (apenas 1 por PM).
                 </div>
 
                 <div class="lista-rolavel" id="listaComposicao"></div>
@@ -123,19 +121,25 @@
               Cancelar
             </button>
 
-            <button type="button" class="btn btn-outline-secondary btn-lg" id="btnSair">
-              Sair
-            </button>
           </div>
 
           <p class="text-center text-body-secondary small mt-3 mb-0">
             PMESP • Vincular PM à Patrulha
           </p>
-
         </div>
       </section>
     </div>
   </main>
+  <footer class="rodape-institucional">
+    <div class="container text-center">
+      <div class="small text-body-secondary">
+        PMESP • 4º BPM/M • 2026
+      </div>
+      <div class="small text-body-secondary">
+        Desenvolvido por: Sd PM 153602-8 Reis
+      </div>
+    </div>
+  </footer>
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

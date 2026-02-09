@@ -12,45 +12,57 @@
   <link rel="stylesheet" href="../css/estilos.css">
 </head>
 
-<body>
-
-  <div class="container py-4 conteudo-largura">
+<body class="layout-pagina">
+  <main class="container py-4">
 
     <!-- Cabeçalho interno com brasões nos cantos -->
-      <header class="cabecalho-interno">
-        <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP">
-        <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M">
-      </header>
+    <header class="cabecalho-interno">
+      <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP">
+      <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M">
+    </header>
 
-    <!-- Card padrão -->
-    <div class="card shadow-sm">
-      <h1 class="h5 text-center mt-3 ">Acesso Operação Carnaval</h1>
-      <div class="card-body p-4">
+    <!-- Card do painel -->
+    <div class="d-flex justify-content-center pt-4">
+      <section class="card card-sombra conteudo-largura-estreita">
+        <div class="card-body p-4">
+        <h1 class="h5 text-center mt-3 ">Acesso Operação Carnaval</h1>
+        <div class="card-body p-4">
 
-        <!-- Mensagem de erro -->
-        <div id="msg" class="alert alert-danger d-none" role="alert"></div>
+          <!-- Mensagem de erro -->
+          <div id="msg" class="alert alert-danger d-none" role="alert"></div>
 
-        <form id="formLogin" novalidate>
-          <div class="mb-3">
-            <label class="form-label">RE</label>
-            <input id="re" type="text" class="form-control" inputmode="numeric" autocomplete="username"
-              placeholder="Digite seu RE (6 dígitos)" required>
-          </div>
+          <form id="formLogin" novalidate>
+            <div class="mb-3">
+              <label class="form-label">RE</label>
+              <input id="re" type="text" class="form-control" inputmode="numeric" autocomplete="username"
+                placeholder="Digite seu RE (6 dígitos)" required>
+            </div>
 
-          <div class="mb-3">
-            <label class="form-label">Senha</label>
-            <input id="senha" type="password" class="form-control" autocomplete="current-password"
-              placeholder="Digite sua senha" required>
-          </div>
+            <div class="mb-3">
+              <label class="form-label">Senha</label>
+              <input id="senha" type="password" class="form-control" autocomplete="current-password"
+                placeholder="Digite sua senha" required>
+            </div>
 
-          <button id="btnEntrar" class="btn btn-primary w-100" type="submit">
-            Entrar
-          </button>
-        </form>
+            <button id="btnEntrar" class="btn btn-primary w-100" type="submit">
+              Entrar
+            </button>
+          </form>
 
+        </div>
       </div>
     </div>
-  </div>
+  </main>
+  <footer class="rodape-institucional">
+    <div class="container text-center">
+      <div class="small text-body-secondary">
+        PMESP • 4º BPM/M • 2026
+      </div>
+      <div class="small text-body-secondary">
+        Desenvolvido por: Sd PM 153602-8 Reis
+      </div>
+    </div>
+  </footer>
 
   <script type="module" src="../js/login-admin.js"></script>
 </body>

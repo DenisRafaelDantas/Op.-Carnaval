@@ -16,39 +16,29 @@
   <link rel="stylesheet" href="../css/estilos.css" />
 </head>
 
-<body>
+<body class="layout-pagina">
   <main class="container py-4">
-    <div class="mx-auto conteudo-largura">
 
-      <header class="cabecalho-interno">
-        <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP">
-        <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M">
-      </header>
+    <!-- Cabeçalho interno com brasões nos cantos -->
+    <header class="cabecalho-interno">
+      <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP">
+      <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M">
+    </header>
 
-      <section class="card shadow-sm h-100">
+    <!-- Card do painel -->
+    <div class="d-flex justify-content-center pt-4">
+      <section class="card card-sombra conteudo-largura-estreita">
         <div class="card-body p-4">
-
-          <h1 class="h5 mb-1">PMs</h1>
-          <p class="text-body-secondary mb-3">
-            Lista de PMs cadastrados. Você pode cadastrar e editar.
-          </p>
-
-          <div class="d-flex gap-2 mb-3">
-            <a class="btn btn-primary" href="cadastro-pm.html">
-              Cadastrar PM
-            </a>
-
+          <div class="d-flex justify-content-between">
+            <h1 class="h5 mb-1">PMs</h1>
             <a class="btn btn-secondary" href="principal.html">
               Voltar
-            </a>
-
-            <!-- Botão para ir à tela de importação via planilha -->
-            <a class="btn btn-outline-success" href="pms-importar-planilha.html" title="Atualizar banco via planilha">
-              <i class="bi bi-file-earmark-spreadsheet"></i>
-              <span class="ms-1 d-none d-sm-inline">Planilha</span>
-            </a>
+            </a>            
           </div>
 
+          <p class="text-body-secondary mb-3">
+              Lista de PMs cadastrados. Você pode cadastrar e editar.
+            </p>
 
           <div id="listaPms" class="lista-rolavel"></div>
 
@@ -56,10 +46,32 @@
             Nenhum PM cadastrado ainda.
           </div>
 
+          <div class="d-flex justify-content-between mt-3">
+            <a class="btn btn-primary" href="cadastro-pm.html">
+              Cadastrar PM
+            </a>
+
+            <a class="btn btn-outline-success" href="pms-importar-planilha.html" title="Atualizar banco via planilha">
+              <i class="bi bi-file-earmark-spreadsheet"></i>
+              <span class="ms-1 d-none d-sm-inline">Planilha</span>
+            </a>
+          </div>
+
         </div>
       </section>
     </div>
   </main>
+
+  <footer class="rodape-institucional">
+    <div class="container text-center">
+      <div class="small text-body-secondary">
+        PMESP • 4º BPM/M • 2026
+      </div>
+      <div class="small text-body-secondary">
+        Desenvolvido por: Sd PM 153602-8 Reis
+      </div>
+    </div>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
     integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
