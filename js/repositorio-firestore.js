@@ -333,7 +333,6 @@ export async function registrarPresencaFS({ re, dataISO, codigoDispositivo,  }) 
     re: reLimpo,
     dataISO: data,
     criadoEm: serverTimestamp(),
-    criadoEmLocal: Date.now(),
     codigoDispositivo: String(codigoDispositivo || "")
   });
 
