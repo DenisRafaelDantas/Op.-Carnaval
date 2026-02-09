@@ -18,15 +18,12 @@
 
 <body class="layout-pagina">
   <main class="container py-4">
+    <header class="cabecalho-interno">
+      <img src="../img/pmesp.png" class="brasao brasao-pmesp" alt="PMESP">
+      <img src="../img/4bpmm.png" class="brasao brasao-4bpmm" alt="4º BPM/M">
+    </header>
     <!-- ✅ aqui a gente controla a largura no desktop -->
     <div class="mx-auto conteudo-largura">
-
-      <header class="mb-4 text-center">
-        <img src="img/pmesp.png" class="d-block mx-auto brasao brasao-pmesp"
-          alt="Brasão da Polícia Militar do Estado de São Paulo" />
-        <img src="img/4bpmm.png" class="d-block mx-auto brasao brasao-4bpmm" alt="Brasão do 4º BPM/M" />
-      </header>
-
       <!-- ✅ UM ÚNICO GRID: RE + cards-botão juntos -->
       <section>
         <div class="row g-3">
@@ -46,9 +43,8 @@
                   <div class="mb-3">
                     <label for="re" class="form-label">RE (6 dígitos)</label>
 
-                    <input type="text" class="form-control form-control-lg" id="re" name="re"
-                      placeholder="Ex.: 123456" inputmode="numeric" autocomplete="off" maxlength="6" required
-                      aria-describedby="ajuda-re" />
+                    <input type="text" class="form-control form-control-lg" id="re" name="re" placeholder="Ex.: 123456"
+                      inputmode="numeric" autocomplete="off" maxlength="6" required aria-describedby="ajuda-re" />
 
                     <div class="invalid-feedback">
                       Informe um RE válido com 6 dígitos (somente números).
