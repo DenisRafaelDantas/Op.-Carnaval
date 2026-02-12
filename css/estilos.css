@@ -15,8 +15,6 @@ body {
   max-width: 1100px;   /* ✅ antes era 460px (apertava demais no PC) */
 }
 
-/* ✅ Para manter o card do RE "enxuto e elegante", use esta classe no HTML
-   (vou te explicar logo abaixo como aplicar sem mudar o layout do resto) */
 .conteudo-largura-estreita {
   width: 100%;
   max-width: 460px;
